@@ -1,7 +1,7 @@
 # Build Script Documentation
 
 ## Overview
-The `build-docker-image.sh` script automates the process of building a Spring Boot application and creating its Docker image. The script handles Maven build and Docker image creation in one step.
+The `build-docker-image.sh` script automates the process of building the order-manager Spring Boot application and creating its Docker image. The script handles Maven build and Docker image creation in one step.
 
 ## Usage
 
@@ -9,7 +9,7 @@ The `build-docker-image.sh` script automates the process of building a Spring Bo
 ```bash
 chmod +x build-docker-image.sh
 ```
-2. Run the script from the /docker directory:
+2. Run the script from the `/docker` directory:
 ```bash
 ./build-docker-image.sh
 ```
