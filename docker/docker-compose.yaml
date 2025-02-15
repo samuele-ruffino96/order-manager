@@ -1,4 +1,12 @@
 services:
+  order-manager:
+    image: order-manager:0.1
+    environment:
+      DB_URL: jdbc:mariadb://db:3306/orders
+      DB_USER: user
+      DB_PASSWORD: password
+    ports:
+      - "8080:8080"
 
   db:
     image: mariadb:11.4
