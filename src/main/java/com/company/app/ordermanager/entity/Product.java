@@ -1,10 +1,17 @@
 package com.company.app.ordermanager.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(of = "id", callSuper = false)
+@ToString
 @Entity
 @Table(name = "products")
 public class Product extends Auditable {

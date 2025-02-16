@@ -1,10 +1,17 @@
 package com.company.app.ordermanager.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = {"order", "product"})
 @Entity
 @Table(name = "order_items")
 public class OrderItem {

@@ -1,11 +1,18 @@
 package com.company.app.ordermanager.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(of = "id", callSuper = false)
+@ToString(exclude = "orderItems")
 @Entity
 @Table(name = "orders")
 public class Order extends Auditable {
