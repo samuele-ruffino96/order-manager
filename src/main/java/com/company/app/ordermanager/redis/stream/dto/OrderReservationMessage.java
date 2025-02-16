@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.redis.stream;
+package com.company.app.ordermanager.redis.stream.dto;
 
 import com.company.app.ordermanager.dto.orderitem.CreateOrderItemDto;
 import lombok.Builder;
