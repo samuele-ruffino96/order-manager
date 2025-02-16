@@ -40,8 +40,8 @@ public class Product extends Auditable {
     private BigDecimal price;
 
     @Version
-    private Long version;
+    private long version;
 
     @Column(name = "stock_level", nullable = false)
-    private Integer stockLevel;
+    private int stockLevel;
 }

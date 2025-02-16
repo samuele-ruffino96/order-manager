@@ -11,7 +11,7 @@ import java.util.UUID;
 public class OrderItemDto {
     private UUID id;
     private ProductDto product;
-    private Integer quantity;
+    private int quantity;
     private BigDecimal purchasePrice;
     private BigDecimal subtotal;
 }
