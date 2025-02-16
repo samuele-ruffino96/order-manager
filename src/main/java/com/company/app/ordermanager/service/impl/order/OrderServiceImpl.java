@@ -7,24 +7,18 @@ import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.product.Product;
-import com.company.app.ordermanager.redis.stream.common.StreamFields;
-import com.company.app.ordermanager.redis.stream.common.StreamNames;
-import com.company.app.ordermanager.redis.stream.dto.OrderReservationMessage;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
 import com.company.app.ordermanager.repository.api.product.ProductRepository;
 import com.company.app.ordermanager.service.api.order.OrderService;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.company.app.ordermanager.service.api.stock.StockReservationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RStream;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.StreamMessageId;
-import org.redisson.api.stream.StreamAddArgs;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -87,38 +81,18 @@ public class OrderServiceImpl implements OrderService {
                             .build();
                 })
                 .collect(Collectors.toSet());
-
         order.setOrderItems(orderItems);
 
         // Save the order and its items
         Order savedOrder = orderRepository.save(order);
 
-        // Publish reservation message to Redis Stream using Redisson
-        try {
-            RStream<String, String> stream = redissonClient.getStream(StreamNames.ORDER_RESERVATION.getKey());
+        /*
+         * TODO: Publish messages as part of the transaction that create order and order items to prevent stuck orders managment
+         *  Simple approach: Transactional outbox pattern + Polling publisher pattern
+         * */
+        // Send stock reservation request to queue
+        stockReservationService.requestStockReservation(savedOrder.getId(), createOrderDto.getItems());
 
-            OrderReservationMessage reservationMessage = OrderReservationMessage.builder()
-                    .orderId(savedOrder.getId())
-                    .items(createOrderDto.getItems())
-                    .build();
-
-            String reservationMessageJson = orderMapper.writeValueAsString(reservationMessage);
-
-            // Add message to stream with auto-generated ID
-            StreamMessageId messageId = stream.add(StreamAddArgs.entry(StreamFields.MESSAGE.getField(), reservationMessageJson));
-
-            log.debug("Published order reservation message with ID {} for order {}", messageId, savedOrder.getId());
-        } catch (JsonProcessingException e) {
-            /*
-             * Log the error but don't roll back the transaction
-             * The order processor will need to implement a mechanism to detect "stuck" orders
-             * TODO: Publish messages as part of a transaction that create order and order items to prevent stuck orders managment
-             *  Simple approach: Transactional outbox pattern + Polling publisher pattern
-             * */
-            log.error("Failed to publish reservation message for order {}", savedOrder.getId());
-            log.error("Error message: {}", e.getMessage());
-        }
-
-        return orderMapper.convertValue(savedOrder, OrderDto.class);
+        return objectMapper.convertValue(savedOrder, OrderDto.class);
     }
 }
