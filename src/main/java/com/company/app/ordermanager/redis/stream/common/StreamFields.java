@@ -1,17 +1,13 @@
 package com.company.app.ordermanager.redis.stream.common;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum StreamFields {
-    MESSAGE("message"),
-    ERROR("error"),
-    STATUS("status");
+    MESSAGE("message");
 
     private final String field;
-
-    StreamFields(String field) {
-        this.field = field;
-    }
-
-    public String getField() {
-        return field;
-    }
 }
