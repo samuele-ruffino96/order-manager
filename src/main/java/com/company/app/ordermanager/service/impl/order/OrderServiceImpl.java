@@ -36,8 +36,9 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
-    private final ObjectMapper orderMapper;
-    private final RedissonClient redissonClient;
+    private final ObjectMapper objectMapper;
+
+    private final StockReservationService stockReservationService;
 
     @Override
     @Transactional
@@ -70,7 +71,7 @@ public class OrderServiceImpl implements OrderService {
                     Product product = productsMap.get(itemDto.getProductId());
 
                     // Validate product version to prevent stale data modifications
-                    if (!itemDto.getProductVersion().equals(product.getVersion())) {
+                    if (!Objects.equals(itemDto.getProductVersion(), (product.getVersion()))) {
                         throw new IllegalStateException(
                                 String.format("Product version mismatch for product %s. Expected: %d, Found: %d",
                                         product.getId(), itemDto.getProductVersion(), product.getVersion())
