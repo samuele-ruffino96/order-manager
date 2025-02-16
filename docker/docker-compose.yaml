@@ -5,6 +5,8 @@ services:
       DB_URL: jdbc:mariadb://db:3306/orders
       DB_USER: user
       DB_PASSWORD: password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "8080:8080"
 
