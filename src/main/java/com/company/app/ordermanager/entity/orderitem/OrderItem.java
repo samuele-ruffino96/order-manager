@@ -1,7 +1,6 @@
 package com.company.app.ordermanager.entity.orderitem;
 
 import com.company.app.ordermanager.entity.order.Order;
-import com.company.app.ordermanager.entity.order.OrderStatus;
 import com.company.app.ordermanager.entity.product.Product;
 import jakarta.persistence.*;
 import lombok.*;
@@ -47,5 +46,5 @@ public class OrderItem {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus status = OrderStatus.PROCESSING;
+    private OrderItemStatus status = OrderItemStatus.PENDING;
 }
