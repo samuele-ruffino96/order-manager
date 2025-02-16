@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.entity;
+package com.company.app.ordermanager.entity.common;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

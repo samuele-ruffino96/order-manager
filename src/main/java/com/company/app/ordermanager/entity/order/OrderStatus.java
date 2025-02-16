@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.entity;
+package com.company.app.ordermanager.entity.order;
 
 /**
  * Represents the various statuses an {@link Order} can have in the application.

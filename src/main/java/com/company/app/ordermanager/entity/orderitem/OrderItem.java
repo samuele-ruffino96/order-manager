@@ -1,5 +1,7 @@
-package com.company.app.ordermanager.entity;
+package com.company.app.ordermanager.entity.orderitem;
 
+import com.company.app.ordermanager.entity.order.Order;
+import com.company.app.ordermanager.entity.product.Product;
 import jakarta.persistence.*;
 import lombok.*;
 

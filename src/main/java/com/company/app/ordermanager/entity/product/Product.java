@@ -1,5 +1,6 @@
-package com.company.app.ordermanager.entity;
+package com.company.app.ordermanager.entity.product;
 
+import com.company.app.ordermanager.entity.common.Auditable;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;

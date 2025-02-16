@@ -1,6 +1,6 @@
-package com.company.app.ordermanager.repository.api;
+package com.company.app.ordermanager.repository.api.product;
 
-import com.company.app.ordermanager.entity.Product;
+import com.company.app.ordermanager.entity.product.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
