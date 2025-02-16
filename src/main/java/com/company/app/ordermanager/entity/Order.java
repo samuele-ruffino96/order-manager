@@ -2,6 +2,7 @@ package com.company.app.ordermanager.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id", callSuper = false)
 @ToString(exclude = "orderItems")
+@SuperBuilder
 @Entity
 @Table(name = "orders")
 public class Order extends Auditable {
@@ -34,10 +36,12 @@ public class Order extends Auditable {
     @Column(length = 1000)
     private String description;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus status;
+    private OrderStatus status = OrderStatus.PENDING;
 
+    @Builder.Default
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OrderItem> orderItems = new HashSet<>();
 }

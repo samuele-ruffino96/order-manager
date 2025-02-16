@@ -2,6 +2,7 @@ package com.company.app.ordermanager.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id", callSuper = false)
 @ToString
+@SuperBuilder
 @Entity
 @Table(name = "products")
 public class Product extends Auditable {
