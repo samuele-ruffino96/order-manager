@@ -6,13 +6,15 @@ package com.company.app.ordermanager.entity.order;
  * This enumeration is used to track the lifecycle state of an {@link Order}.
  * The possible statuses are:
  * <ul>
- *   <li>{@link #PENDING}: The order has been created but not yet processed.</li>
- *   <li>{@link #CONFIRMED}: The order has been approved and is being processed.</li>
- *   <li>{@link #CANCELLED}: The order has been cancelled and will not be processed further.</li>
+ *   <li>{@link #PROCESSING}: Order items are being processed
+ *   <li>{@link #CONFIRMED}: All items successfully processed
+ *   <li>{@link #PARTIALLY_CONFIRMED}: Some items processed successfully, others failed
+ *   <li>{@link #CANCELLED}: All items failed or order cancelled
  * </ul>
  */
 public enum OrderStatus {
-    PENDING,
+    PROCESSING,
     CONFIRMED,
+    PARTIALLY_CONFIRMED,
     CANCELLED
 }

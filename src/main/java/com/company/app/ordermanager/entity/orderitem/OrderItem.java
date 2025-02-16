@@ -1,6 +1,7 @@
 package com.company.app.ordermanager.entity.orderitem;
 
 import com.company.app.ordermanager.entity.order.Order;
+import com.company.app.ordermanager.entity.order.OrderStatus;
 import com.company.app.ordermanager.entity.product.Product;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
 @ToString(exclude = {"order", "product"})
+@Builder
 @Entity
 @Table(name = "order_items")
 public class OrderItem {
@@ -41,4 +43,9 @@ public class OrderItem {
 
     @Column(name = "purchase_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal purchasePrice;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OrderStatus status = OrderStatus.PROCESSING;
 }
