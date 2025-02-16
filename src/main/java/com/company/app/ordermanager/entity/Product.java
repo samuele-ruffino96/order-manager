@@ -6,6 +6,14 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Represents a product available in the system.
+ * <p>
+ * The {@code Product} class encapsulates details about a product, including its unique identifier,
+ * name, description, price, stock level, and version for optimistic locking.
+ * It extends the {@link Auditable} class to provide audit details such as creation and modification timestamps.
+ * </p>
+ */
 @Getter
 @Setter
 @NoArgsConstructor

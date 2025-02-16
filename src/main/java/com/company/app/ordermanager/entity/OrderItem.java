@@ -6,6 +6,13 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Represents an individual ordered item within an {@link Order}.
+ * <p>
+ * The {@code OrderItem} class associates a single {@link Product} with an {@link Order},
+ * while also capturing the quantity of the product ordered and its price at the time of purchase.
+ * </p>
+ */
 @Getter
 @Setter
 @NoArgsConstructor

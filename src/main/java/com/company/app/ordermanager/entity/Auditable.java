@@ -11,6 +11,15 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
+/**
+ * Provides auditing capabilities for entities.
+ * <p>
+ * The {@code Auditable} class is a base class designed to automatically track audit information
+ * such as the creation timestamp and the last modification timestamp for entities in the system.
+ * Classes extending {@code Auditable} will inherit these properties, which are managed
+ * automatically by Spring Data JPA.
+ * </p>
+ */
 @Getter
 @Setter
 @NoArgsConstructor

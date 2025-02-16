@@ -7,6 +7,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Represents an order within the system.
+ * <p>
+ * The {@code Order} class is responsible for encapsulating all details about a customer's order,
+ * including the customer's name, order status, and associated {@link OrderItem}s.
+ * It extends the {@link Auditable} class to provide audit details such as creation and modification timestamps.
+ * </p>
+ */
 @Getter
 @Setter
 @NoArgsConstructor
