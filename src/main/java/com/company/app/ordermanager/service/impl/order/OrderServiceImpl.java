@@ -42,11 +42,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderDto createOrder(CreateOrderDto createOrderDto) {
-        // First, fetch all products in a single query to avoid N+1 problems
+        // Fetch all products in a single query
         Set<UUID> productIds = createOrderDto.getItems().stream()
                 .map(CreateOrderItemDto::getProductId)
                 .collect(Collectors.toSet());
-
         Map<UUID, Product> productsMap = productRepository.findAllById(productIds)
                 .stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
@@ -107,8 +106,7 @@ public class OrderServiceImpl implements OrderService {
             // Add message to stream with auto-generated ID
             StreamMessageId messageId = stream.add(StreamAddArgs.entry(StreamFields.MESSAGE.getField(), reservationMessageJson));
 
-            log.debug("Published order reservation message with ID {} for order {}",
-                    messageId, savedOrder.getId());
+            log.debug("Published order reservation message with ID {} for order {}", messageId, savedOrder.getId());
         } catch (JsonProcessingException e) {
             /*
              * Log the error but don't roll back the transaction
