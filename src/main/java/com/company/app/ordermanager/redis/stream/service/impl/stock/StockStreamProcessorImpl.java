@@ -57,7 +57,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
 
     @PostConstruct
     private void init() {
-        stream = redissonClient.getStream(StreamNames.STOCK_UPDATE.getKey());
+        stream = redissonClient.getStream(StreamNames.STOCK_UPDATE_QUEUE.getKey());
 
         try {
             StreamCreateGroupArgs groupArgs = StreamCreateGroupArgs

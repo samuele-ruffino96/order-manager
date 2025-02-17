@@ -10,17 +10,17 @@ import lombok.Getter;
  * a distinct functionality such as stock updates, product updates, or order confirmations.
  *
  * <ul>
- *   <li>{@link #STOCK_UPDATE} - Represents the stream used for stock update messages.</li>
- *   <li>{@link #PRODUCT_UPDATE} - Represents the stream used for product update messages.</li>
- *   <li>{@link #ORDER_UPDATE} - Represents the stream used for order update messages.</li>
+ *   <li>{@link #STOCK_UPDATE_QUEUE} - Represents the stream used for stock update messages.</li>
+ *   <li>{@link #PRODUCT_STOCK_LEVEL_UPDATE_QUEUE} - Represents the stream used for product update messages.</li>
+ *   <li>{@link #ORDER_ITEM_STATUS_UPDATE_QUEUE} - Represents the stream used for order items status update messages.</li>
  * </ul>
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum StreamNames {
-    STOCK_UPDATE("stock:update:stream"),
-    PRODUCT_UPDATE("product:update:stream"),
-    ORDER_UPDATE("order:update:stream");
+    STOCK_UPDATE_QUEUE("stock:update:stream"),
+    PRODUCT_STOCK_LEVEL_UPDATE_QUEUE("product:update:stream"),
+    ORDER_ITEM_STATUS_UPDATE_QUEUE("order-item:update:stream");
 
     private final String key;
 }
