@@ -9,7 +9,7 @@ import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.product.Product;
 import com.company.app.ordermanager.exception.order.OrderNotFoundException;
 import com.company.app.ordermanager.exception.orderitem.OrderItemsNotFoundException;
-import com.company.app.ordermanager.redis.stream.service.api.StockStreamService;
+import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamService;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
 import com.company.app.ordermanager.repository.api.product.ProductRepository;
 import com.company.app.ordermanager.service.api.order.OrderService;
@@ -95,7 +95,7 @@ public class OrderServiceImpl implements OrderService {
          * */
 
         // Send stock reservation request to queue
-        stockStreamService.requestStockReservation(savedOrder.getId(), createOrderDto.getItems());
+        stockStreamService.requestStockReservation(savedOrder.getId(), orderItems);
 
         return objectMapper.convertValue(savedOrder, OrderDto.class);
     }

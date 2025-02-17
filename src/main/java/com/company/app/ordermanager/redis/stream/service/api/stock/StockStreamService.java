@@ -1,6 +1,5 @@
-package com.company.app.ordermanager.redis.stream.service.api;
+package com.company.app.ordermanager.redis.stream.service.api.stock;
 
-import com.company.app.ordermanager.dto.orderitem.CreateOrderItemDto;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 
 import java.util.Set;
@@ -18,11 +17,11 @@ public interface StockStreamService {
      *
      * @param orderId the unique identifier of the order for which stock reservation is being requested.
      *                This parameter must not be {@literal null}.
-     * @param items   the set of {@link CreateOrderItemDto} objects representing the order items for which stock
-     *                should be reserved. This parameter must not be {@literal null}.
+     * @param items   the set of {@link OrderItem} order items object for which stock should be reserved.
+     *                This parameter must not be {@literal null}.
      * @throws IllegalArgumentException if the {@code orderId} or {@code items} parameter is {@literal null}.
      */
-    void requestStockReservation(UUID orderId, Set<CreateOrderItemDto> items);
+    void requestStockReservation(UUID orderId, Set<OrderItem> items);
 
     /**
      * Perform stock cancellation requests for a given order. This method prepares and publishes a cancellation message

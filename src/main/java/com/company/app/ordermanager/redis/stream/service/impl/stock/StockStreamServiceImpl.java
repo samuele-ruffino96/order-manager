@@ -1,11 +1,10 @@
-package com.company.app.ordermanager.redis.stream.service.impl;
+package com.company.app.ordermanager.redis.stream.service.impl.stock;
 
-import com.company.app.ordermanager.dto.orderitem.CreateOrderItemDto;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.redis.stream.common.StreamFields;
 import com.company.app.ordermanager.redis.stream.common.StreamNames;
 import com.company.app.ordermanager.redis.stream.dto.StockUpdateMessage;
-import com.company.app.ordermanager.redis.stream.service.api.StockStreamService;
+import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -29,16 +28,17 @@ public class StockStreamServiceImpl implements StockStreamService {
     private final RedissonClient redissonClient;
 
     @Override
-    public void requestStockReservation(UUID orderId, Set<CreateOrderItemDto> createOrderItemDtos) {
+    public void requestStockReservation(UUID orderId, Set<OrderItem> orderItems) {
         Assert.notNull(orderId, "Order ID must not be null");
-        Assert.notNull(createOrderItemDtos, "Items must not be null");
+        Assert.notNull(orderItems, "Order items must not be null");
 
         try {
-            List<StockUpdateMessage> stockUpdateMessages = createOrderItemDtos.stream()
+            List<StockUpdateMessage> stockUpdateMessages = orderItems.stream()
                     .map(item -> StockUpdateMessage.builder()
                             .orderId(orderId)
+                            .orderItemId(item.getId())
                             .updateType(StockUpdateMessage.UpdateType.RESERVE)
-                            .productId(item.getProductId())
+                            .productId(item.getProduct().getId())
                             .quantity(item.getQuantity())
                             .build()
                     ).toList();
@@ -60,6 +60,7 @@ public class StockStreamServiceImpl implements StockStreamService {
             List<StockUpdateMessage> stockUpdateMessages = orderItems.stream()
                     .map(item -> StockUpdateMessage.builder()
                             .orderId(orderId)
+                            .orderItemId(item.getId())
                             .updateType(StockUpdateMessage.UpdateType.CANCEL)
                             .productId(item.getProduct().getId())
                             .quantity(item.getQuantity())
