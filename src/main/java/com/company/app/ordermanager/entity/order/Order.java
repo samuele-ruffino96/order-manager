@@ -46,17 +46,17 @@ public class Order extends Auditable {
 
     @Transient
     public OrderStatus getStatus() {
-        if (hasItemsWithStatus(OrderItemStatus.PROCESSING, OrderItemStatus.CANCELLING)) {
-            return OrderStatus.PROCESSING;
-        }
-        if (hasAnyItemWithStatus(OrderItemStatus.PROCESSING_FAILED)) {
-            return OrderStatus.PARTIALLY_CONFIRMED;
-        }
-        if (allItemsHaveStatus(OrderItemStatus.COMPLETED)) {
+        if (allItemsHaveStatus(OrderItemStatus.CONFIRMED)) {
             return OrderStatus.CONFIRMED;
         }
         if (allItemsHaveStatus(OrderItemStatus.CANCELLED)) {
             return OrderStatus.CANCELLED;
+        }
+        if (hasItemsWithStatus(OrderItemStatus.PROCESSING, OrderItemStatus.CANCELLING)) {
+            return OrderStatus.PROCESSING;
+        }
+        if (hasItemsWithStatus(OrderItemStatus.PROCESSING_FAILED, OrderItemStatus.CANCELLED)) {
+            return OrderStatus.PARTIALLY_CONFIRMED;
         }
         return OrderStatus.UNKNOWN;
     }
