@@ -4,7 +4,6 @@ import com.company.app.ordermanager.dto.order.CreateOrderDto;
 import com.company.app.ordermanager.dto.order.OrderDto;
 import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.UUID;
@@ -30,7 +29,6 @@ public interface OrderService {
      *                                  in the {@literal createOrderDto} do not all exist in the database.</li>
      * @throws IllegalStateException    if there is a mismatch between the provided product version and the actual product version in the database.</li>
      */
-    @Transactional
     OrderDto createOrder(CreateOrderDto createOrderDto);
 
     /**
@@ -45,6 +43,5 @@ public interface OrderService {
      * @throws NullPointerException     if either {@code orderId} or the {@code orderItemIds} set
      *                                  is {@code null}
      */
-    @Transactional
     void cancelOrderItem(UUID orderId, Set<UUID> orderItemIds);
 }

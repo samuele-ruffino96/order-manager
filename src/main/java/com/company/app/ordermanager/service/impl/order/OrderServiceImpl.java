@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -36,6 +37,43 @@ public class OrderServiceImpl implements OrderService {
     private final StockStreamService stockStreamService;
 
     @Override
+    @Transactional
+    public void cancelOrderItem(UUID orderId, Set<UUID> orderItemIds) {
+        Assert.notNull(orderId, "Order ID must not be null");
+        Assert.notNull(orderItemIds, "Order item IDs must not be null");
+
+        // Fetch order and order items
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        Set<OrderItem> orderItems = order.getOrderItems().stream()
+                .filter(i -> orderItemIds.contains(i.getId()))
+                .map(orderItem -> {
+                    orderItem.setStatus(OrderItemStatus.CANCELLING);
+                    return orderItem;
+                })
+                .collect(Collectors.toSet());
+
+        // Validate that all order items exists
+        if (orderItems.size() != orderItemIds.size()) {
+            Set<UUID> foundedIds = orderItems.stream().map(OrderItem::getId).collect(Collectors.toSet());
+
+            Set<UUID> missingOrderItems = orderItemIds.stream()
+                    .filter(id -> !foundedIds.contains(id))
+                    .collect(Collectors.toSet());
+
+            throw new OrderItemsNotFoundException(orderId, missingOrderItems);
+        }
+
+        // Update order and its items
+        order.setOrderItems(orderItems);
+        orderRepository.save(order);
+
+        // Send stock reservation request to queue
+        stockStreamService.requestStockCancellation(orderId, orderItems);
+    }
+
+    @Override
+    @Transactional
     public OrderDto createOrder(CreateOrderDto createOrderDto) {
         Assert.notNull(createOrderDto, "Create order DTO must not be null");
 
@@ -98,40 +136,5 @@ public class OrderServiceImpl implements OrderService {
         stockStreamService.requestStockReservation(savedOrder.getId(), orderItems);
 
         return objectMapper.convertValue(savedOrder, OrderDto.class);
-    }
-
-    @Override
-    public void cancelOrderItem(UUID orderId, Set<UUID> orderItemIds) {
-        Assert.notNull(orderId, "Order ID must not be null");
-        Assert.notNull(orderItemIds, "Order item IDs must not be null");
-
-        // Fetch order and order items
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
-        Set<OrderItem> orderItems = order.getOrderItems().stream()
-                .filter(i -> orderItemIds.contains(i.getId()))
-                .map(orderItem -> {
-                    orderItem.setStatus(OrderItemStatus.CANCELLING);
-                    return orderItem;
-                })
-                .collect(Collectors.toSet());
-
-        // Validate that all order items exists
-        if (orderItems.size() != orderItemIds.size()) {
-            Set<UUID> foundedIds = orderItems.stream().map(OrderItem::getId).collect(Collectors.toSet());
-
-            Set<UUID> missingOrderItems = orderItemIds.stream()
-                    .filter(id -> !foundedIds.contains(id))
-                    .collect(Collectors.toSet());
-
-            throw new OrderItemsNotFoundException(orderId, missingOrderItems);
-        }
-
-        // Update order and its items
-        order.setOrderItems(orderItems);
-        orderRepository.save(order);
-
-        // Send stock reservation request to queue
-        stockStreamService.requestStockCancellation(orderId, orderItems);
     }
 }
