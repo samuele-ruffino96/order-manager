@@ -3,7 +3,9 @@
 ## Overview
 
 The `build-docker-image.sh` script automates the process of building the order-manager Spring Boot application and
-creating its Docker image. The script handles Maven build and Docker images creation.
+creating its Docker image. The script handles Maven build and Docker image creation.
+Then it builds a custom redis Docker image that runs a redis server using a custom redis.conf file.
+
 
 ## Usage
 
