@@ -12,8 +12,8 @@ import java.util.UUID;
  */
 public interface StockStreamService {
     /**
-     * Perform stock reservation requests for a given order. This method prepares and publishes a reservation message
-     * to a Redis stream to inform the stock management system to reserve stock for the specified order items.
+     * This method prepares and publishes a reservation message to a Redis stream to inform
+     * the stock management system to reserve stock for the specified order items.
      *
      * @param orderId the unique identifier of the order for which stock reservation is being requested.
      *                This parameter must not be {@literal null}.
@@ -21,11 +21,11 @@ public interface StockStreamService {
      *                This parameter must not be {@literal null}.
      * @throws IllegalArgumentException if the {@code orderId} or {@code items} parameter is {@literal null}.
      */
-    void requestStockReservation(UUID orderId, Set<OrderItem> items);
+    void sendStockReservationMessage(UUID orderId, Set<OrderItem> items);
 
     /**
-     * Perform stock cancellation requests for a given order. This method prepares and publishes a cancellation message
-     * to a Redis stream to informs the stock management system to cancel stock reservation for the specified order items.
+     * This method prepares and publishes a cancellation message to a Redis stream to informs
+     * the stock management system to cancel stock reservation for the specified order items.
      *
      * @param orderId the unique identifier of the order for which stock cancellation is being requested.
      *                This parameter must not be {@literal null}.
@@ -33,5 +33,5 @@ public interface StockStreamService {
      *                This parameter must not be {@literal null}.
      * @throws IllegalArgumentException if the {@code orderId} or {@code items} parameter is {@literal null}.
      */
-    void requestStockCancellation(UUID orderId, Set<OrderItem> items);
+    void sendStockCancellationMessage(UUID orderId, Set<OrderItem> items);
 }

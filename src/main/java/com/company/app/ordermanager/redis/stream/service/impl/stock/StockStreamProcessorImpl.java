@@ -78,7 +78,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
     }
 
     @Scheduled(fixedRate = 5000)
-    public void processStockUpdates() {
+    public void processStockUpdateMessages() {
         // Read new messages from the stream using the new API
         Map<StreamMessageId, Map<String, String>> entries = stream.readGroup(
                 GROUP_NAME,
@@ -170,7 +170,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                         message.getQuantity());
 
                 // Send order item cancelled request to queue
-                orderItemStreamService.requestOrderItemStatusUpdate(
+                orderItemStreamService.sendOrderItemStatusUpdateMessage(
                         message.getOrderId(),
                         message.getOrderItemId(),
                         OrderItemStatus.CANCELLED,
@@ -183,7 +183,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                         message.getQuantity());
 
                 // Send order item confirmed request to queue
-                orderItemStreamService.requestOrderItemStatusUpdate(
+                orderItemStreamService.sendOrderItemStatusUpdateMessage(
                         message.getOrderId(),
                         message.getOrderItemId(),
                         OrderItemStatus.CONFIRMED
@@ -226,7 +226,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
             tryLock(message.getProductId(), lock);
 
             // Send order item cancelled request to queue
-            orderItemStreamService.requestOrderItemStatusUpdate(
+            orderItemStreamService.sendOrderItemStatusUpdateMessage(
                     message.getOrderId(),
                     message.getOrderItemId(),
                     OrderItemStatus.CONFIRMED
@@ -343,7 +343,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         redisTemplate.opsForValue().set(stockKey, String.valueOf(newStockLevel));
 
         // Send update stock level request to queue
-        productStreamService.requestProductStockLevelUpdate(productId, newStockLevel);
+        productStreamService.sendProductStockLevelUpdateMessage(productId, newStockLevel);
     }
 
     /**

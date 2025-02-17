@@ -28,7 +28,7 @@ public class StockStreamServiceImpl implements StockStreamService {
     private final RedissonClient redissonClient;
 
     @Override
-    public void requestStockReservation(UUID orderId, Set<OrderItem> orderItems) {
+    public void sendStockReservationMessage(UUID orderId, Set<OrderItem> orderItems) {
         Assert.notNull(orderId, "Order ID must not be null");
         Assert.notNull(orderItems, "Order items must not be null");
 
@@ -52,7 +52,7 @@ public class StockStreamServiceImpl implements StockStreamService {
     }
 
     @Override
-    public void requestStockCancellation(UUID orderId, Set<OrderItem> orderItems) {
+    public void sendStockCancellationMessage(UUID orderId, Set<OrderItem> orderItems) {
         Assert.notNull(orderId, "Order ID must not be null");
         Assert.notNull(orderItems, "Items must not be null");
 
