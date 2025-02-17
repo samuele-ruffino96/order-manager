@@ -1,6 +1,7 @@
 package com.company.app.ordermanager.redis.stream.service.impl.stock;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
+import com.company.app.ordermanager.exception.orderitem.OrderItemsNotFoundException;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.exception.stock.StockUpdateException;
 import com.company.app.ordermanager.redis.stream.common.StreamFields;
@@ -27,6 +28,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -122,6 +125,14 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
 
                 // Trim the stream to ensure it doesn't grow indefinitely.
                 stream.trim(StreamTrimArgs.maxLen(1000).noLimit());
+            } catch (OrderItemsNotFoundException e) {
+                log.error("Failed to find order item within stock update message: {}. Error: {}", message, e.getMessage());
+
+                // Acknowledge the message since it is not a valid message
+                stream.ack(GROUP_NAME, messageId);
+
+                // Trim the stream to ensure it doesn't grow indefinitely.
+                stream.trim(StreamTrimArgs.maxLen(1000).noLimit());
             } catch (StockUpdateException e) {
                 log.warn("Failed to acquire lock for product within stock update message: {}. Error: {}", message, e.getMessage());
 
@@ -148,6 +159,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
      *                                  indicating it is not possible to proceed with the requested operation.
      * @throws ProductNotFoundException If the product with the given {@code productId}
      *                                  is not found in the database.
+     * @throws OrderItemsNotFoundException If the order item specified within message is not found.
      */
     private void processStockUpdate(StockUpdateMessage message) {
         switch (message.getUpdateType()) {
@@ -167,6 +179,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
      *                                  indicating it is not possible to proceed with the requested operation.
      * @throws ProductNotFoundException If the product with the given {@code productId}
      *                                  is not found in the database.
+     * @throws OrderItemsNotFoundException If the order item specified within message is not found.
      */
     private void handleStockReservation(StockUpdateMessage message) {
         // Get product lock
@@ -186,6 +199,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                 // Update order item status to cancelled
                 updateOrderItem(
                         message.getOrderItemId(),
+                        message.getExpectedOrderItemVersion(),
                         message.getOrderId(),
                         message.getProductId(),
                         OrderItemStatus.CANCELLED,
@@ -200,6 +214,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                 // Update order item status to confirmed
                 updateOrderItem(
                         message.getOrderItemId(),
+                        message.getExpectedOrderItemVersion(),
                         message.getOrderId(),
                         message.getProductId(),
                         OrderItemStatus.CONFIRMED,
@@ -238,6 +253,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
      *                                  is not found in the database.
      * @throws NumberFormatException    If the stock level retrieved from the cache cannot
      *                                  be parsed to an integer.
+     * @throws OrderItemsNotFoundException If the order item specified within message is not found.
      */
     private void handleStockCancellation(StockUpdateMessage message) {
         // Get product lock
@@ -249,6 +265,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
             // Update order item status to cancelled
             updateOrderItem(
                     message.getOrderItemId(),
+                    message.getExpectedOrderItemVersion(),
                     message.getOrderId(),
                     message.getProductId(),
                     OrderItemStatus.CANCELLED,
@@ -348,7 +365,28 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         productRepository.updateStockLevel(productId, newStockLevel);
     }
 
-    private void updateOrderItem(UUID orderItemId, UUID orderId, UUID productId, OrderItemStatus status, String error) {
+    /**
+     * Updates the status of a specific order item within an order. The method ensures that the update is only performed if
+     * the current version of the order item matches the expected version, preventing overwriting a newer status. If an
+     * error message is provided, it is also saved along with the status update.
+     *
+     * @param orderItemId             The {@link UUID} of the order item to be updated. This uniquely identifies the specific item within an order.
+     * @param expectedOrderItemStatus The expected version of the order item. If the current version does not match this value,
+     *                                the update is not performed to avoid overwriting newer changes.
+     * @param orderId                 The {@link UUID} of the order containing the order item. This identifies the parent order of the item.
+     * @param productId               The {@link UUID} of the product associated with the order item. This identifies the product being updated.
+     * @param status                  The {@link OrderItemStatus} representing the new status to be set for the order item.
+     * @param error                   An optional error message to associate with the order item. If {@literal null}, no error message is set.
+     * @throws OrderItemsNotFoundException If the order item with the specified {@code orderItemId} is not found in the repository.
+     */
+    private void updateOrderItem(UUID orderItemId, long expectedOrderItemStatus, UUID orderId, UUID productId, OrderItemStatus status, String error) {
+        long version = orderItemRepository.findVersionById(orderItemId).orElseThrow(() -> new OrderItemsNotFoundException(orderId, Set.of(orderItemId)));
+
+        if (!Objects.equals(expectedOrderItemStatus, version)) {
+            // If we don't return, we could overwrite a newer status
+            return;
+        }
+
         if (error != null) {
             orderItemRepository.updateStatusAndError(orderItemId, productId, orderId, status, error);
         } else {
