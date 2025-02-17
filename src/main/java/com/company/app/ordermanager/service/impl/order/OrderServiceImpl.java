@@ -118,8 +118,10 @@ public class OrderServiceImpl implements OrderService {
 
         // Validate that all order items exists
         if (orderItems.size() != orderItemIds.size()) {
+            Set<UUID> foundedIds = orderItems.stream().map(OrderItem::getId).collect(Collectors.toSet());
+
             Set<UUID> missingOrderItems = orderItemIds.stream()
-                    .filter(id -> !orderItems.contains(id))
+                    .filter(id -> !foundedIds.contains(id))
                     .collect(Collectors.toSet());
 
             throw new OrderItemsNotFoundException(orderId, missingOrderItems);
