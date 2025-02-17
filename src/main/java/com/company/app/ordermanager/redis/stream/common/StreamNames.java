@@ -7,7 +7,9 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum StreamNames {
-    STOCK_UPDATE("stock:update:stream");
+    STOCK_UPDATE("stock:update:stream"),
+    PRODUCT_UPDATE("product:update:stream"),
+    ORDER_UPDATE("order:update:stream");
 
     private final String key;
 }
