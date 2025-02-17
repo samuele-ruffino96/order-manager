@@ -25,6 +25,7 @@ import org.redisson.api.stream.StreamReadGroupArgs;
 import org.redisson.api.stream.StreamTrimArgs;
 import org.redisson.client.RedisException;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -78,6 +79,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         }
     }
 
+    @Async
     @Scheduled(fixedRate = 2000)
     public void processStockUpdateMessages() {
         // Read new messages from the stream using the new API
