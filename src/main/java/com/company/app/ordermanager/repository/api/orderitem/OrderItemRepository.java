@@ -19,4 +19,15 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
                      @Param("productId") UUID productId,
                      @Param("orderId") UUID orderId,
                      @Param("status") OrderItemStatus status);
+
+    @Modifying
+    @Query("UPDATE OrderItem oi SET oi.status = :status, oi.error = :error " +
+            "WHERE oi.id = :orderItemId " +
+            "AND oi.product.id = :productId " +
+            "AND oi.order.id = :orderId")
+    int updateStatusAndError(@Param("orderItemId") UUID orderItemId,
+                             @Param("productId") UUID productId,
+                             @Param("orderId") UUID orderId,
+                             @Param("status") OrderItemStatus status,
+                             @Param("error") String error);
 }
