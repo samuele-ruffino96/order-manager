@@ -7,6 +7,8 @@ import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.product.Product;
+import com.company.app.ordermanager.exception.order.OrderNotFoundException;
+import com.company.app.ordermanager.exception.orderitem.OrderItemsNotFoundException;
 import com.company.app.ordermanager.redis.stream.service.api.StockStreamService;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
 import com.company.app.ordermanager.repository.api.product.ProductRepository;
@@ -87,9 +89,11 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
 
         /*
-         * TODO: Publish messages as part of the transaction that create order and order items to prevent stuck orders managment
-         *  Simple approach: Transactional outbox pattern + Polling publisher pattern
+         * TODO: We need to publish messages as part of the transaction that create order and order items
+         *  to prevent inconsistent order state, such as stuck orders management
+         *  We could use a simple approach like: Transactional outbox pattern + Polling publisher pattern.
          * */
+
         // Send stock reservation request to queue
         stockStreamService.requestStockReservation(savedOrder.getId(), createOrderDto.getItems());
 
@@ -103,9 +107,7 @@ public class OrderServiceImpl implements OrderService {
 
         // Fetch order and order items
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Order with ID %s not found", orderId)
-                ));
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
         Set<OrderItem> orderItems = order.getOrderItems().stream()
                 .filter(i -> orderItemIds.contains(i.getId()))
                 .map(orderItem -> {
@@ -120,9 +122,7 @@ public class OrderServiceImpl implements OrderService {
                     .filter(id -> !orderItems.contains(id))
                     .collect(Collectors.toSet());
 
-            throw new IllegalArgumentException(
-                    String.format("Order items not found for order %s: %s", orderId, missingOrderItems)
-            );
+            throw new OrderItemsNotFoundException(orderId, missingOrderItems);
         }
 
         // Update order and its items
