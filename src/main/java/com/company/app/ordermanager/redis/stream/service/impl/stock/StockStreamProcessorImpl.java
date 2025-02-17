@@ -173,6 +173,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                 orderItemStreamService.sendOrderItemStatusUpdateMessage(
                         message.getOrderId(),
                         message.getOrderItemId(),
+                        message.getProductId(),
                         OrderItemStatus.CANCELLED,
                         "INSUFFICIENT_STOCK"
                 );
@@ -186,6 +187,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                 orderItemStreamService.sendOrderItemStatusUpdateMessage(
                         message.getOrderId(),
                         message.getOrderItemId(),
+                        message.getProductId(),
                         OrderItemStatus.CONFIRMED
                 );
 
@@ -229,6 +231,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
             orderItemStreamService.sendOrderItemStatusUpdateMessage(
                     message.getOrderId(),
                     message.getOrderItemId(),
+                    message.getProductId(),
                     OrderItemStatus.CONFIRMED
             );
 
