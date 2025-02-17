@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
@@ -30,4 +31,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
                              @Param("orderId") UUID orderId,
                              @Param("status") OrderItemStatus status,
                              @Param("error") String error);
+
+    @Query("SELECT oi.version FROM OrderItem oi WHERE oi.id = :orderItemId")
+    Optional<Long> findVersionById(@Param("orderItemId") UUID orderItemId);
 }
