@@ -9,4 +9,5 @@ public interface OrderService {
     OrderDto createOrder(CreateOrderDto createOrderDto);
 
     void cancelOrderItem(UUID orderId, UUID orderItemId);
+    void cancelOrderItem(UUID orderId, Set<UUID> orderItemIds);
 }
