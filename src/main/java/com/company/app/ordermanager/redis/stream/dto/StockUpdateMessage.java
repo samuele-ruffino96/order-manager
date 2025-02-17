@@ -18,6 +18,7 @@ import java.util.UUID;
 public class StockUpdateMessage {
     private UUID orderId;
     private UUID orderItemId;
+    private long expectedOrderItemVersion;
     private UpdateType updateType;
     private UUID productId;
     private int quantity;
