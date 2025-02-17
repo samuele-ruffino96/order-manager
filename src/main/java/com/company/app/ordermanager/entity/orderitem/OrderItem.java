@@ -48,6 +48,9 @@ public class OrderItem {
     @Column(nullable = false)
     private OrderItemStatus status = OrderItemStatus.PROCESSING;
 
+    @Version
+    private long version;
+
     @Column(length = 1000)
     private String error;
 }
