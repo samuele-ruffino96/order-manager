@@ -1,15 +1,13 @@
 package com.company.app.ordermanager.redis.stream.service.impl.stock;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
-import com.company.app.ordermanager.entity.product.Product;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.exception.stock.StockUpdateException;
 import com.company.app.ordermanager.redis.stream.common.StreamFields;
 import com.company.app.ordermanager.redis.stream.common.StreamNames;
 import com.company.app.ordermanager.redis.stream.dto.StockUpdateMessage;
-import com.company.app.ordermanager.redis.stream.service.api.orderitem.OrderItemStreamService;
-import com.company.app.ordermanager.redis.stream.service.api.product.ProductStreamService;
 import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamProcessor;
+import com.company.app.ordermanager.repository.api.orderitem.OrderItemRepository;
 import com.company.app.ordermanager.repository.api.product.ProductRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,8 +22,6 @@ import org.redisson.api.stream.StreamCreateGroupArgs;
 import org.redisson.api.stream.StreamReadGroupArgs;
 import org.redisson.api.stream.StreamTrimArgs;
 import org.redisson.client.RedisException;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -40,20 +36,16 @@ import java.util.concurrent.TimeUnit;
 public class StockStreamProcessorImpl implements StockStreamProcessor {
     private static final String GROUP_NAME = "stock-processor-group";
     private static final String CONSUMER_NAME = "consumer-1";
-    private static final String STOCK_LOCK_KEY_PREFIX = "product:lock:";
-    private static final String STOCK_VALUE_KEY_PREFIX = "stock:";
+    private static final String PRODUCT_LOCK_KEY_PREFIX = "product:lock:";
 
     private static final int STREAM_BATCH_SIZE = 1;
     private static final Duration STREAM_WAIT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration LOCK_TIMEOUT = Duration.ofSeconds(5);
-    private static final Duration CACHE_EXPIRY = Duration.ofHours(1);
 
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
-    private final StringRedisTemplate redisTemplate;
-    private final OrderItemStreamService orderItemStreamService;
-    private final ProductStreamService productStreamService;
     private final ProductRepository productRepository;
+    private final OrderItemRepository orderItemRepository;
 
     private RStream<String, String> stream;
 
@@ -79,8 +71,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         }
     }
 
-    @Async
-    @Scheduled(fixedRate = 2000)
+    @Scheduled(fixedDelay = 2000)
     public void processStockUpdateMessages() {
         // Read new messages from the stream using the new API
         Map<StreamMessageId, Map<String, String>> entries = stream.readGroup(
@@ -116,17 +107,33 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                 // Trim the stream to ensure it doesn't grow indefinitely.
                 stream.trim(StreamTrimArgs.maxLen(1000).noLimit());
             } catch (JsonProcessingException e) {
-                log.error("Failed to parse message: {}. Error: {}", message, e.getMessage());
+                log.error("Failed to parse stock update message: {}. Error: {}", message, e.getMessage());
 
                 // Acknowledge the message since it is not a valid message
-                stream.ack("processor-group", messageId);
+                stream.ack(GROUP_NAME, messageId);
+
+                // Trim the stream to ensure it doesn't grow indefinitely.
+                stream.trim(StreamTrimArgs.maxLen(1000).noLimit());
+            } catch (ProductNotFoundException e) {
+                log.error("Failed to find product within stock update message: {}. Error: {}", message, e.getMessage());
+
+                // Acknowledge the message since it is not a valid message
+                stream.ack(GROUP_NAME, messageId);
 
                 // Trim the stream to ensure it doesn't grow indefinitely.
                 stream.trim(StreamTrimArgs.maxLen(1000).noLimit());
             } catch (StockUpdateException e) {
-                log.warn("Failed to process stock update message with id: {}. Error: {}", messageId, e.getMessage());
+                log.warn("Failed to acquire lock for product within stock update message: {}. Error: {}", message, e.getMessage());
 
                 // Don't send ack so message could be reprocessed later
+            } catch (Exception e) {
+                log.error("Failed to process stock update message: {}. Error: {}", message, e.getMessage());
+
+                // Unexpected exception occur, acknowledge the message to avoid reprocessing
+                stream.ack(GROUP_NAME, messageId);
+
+                // Trim the stream to ensure it doesn't grow indefinitely.
+                stream.trim(StreamTrimArgs.maxLen(1000).noLimit());
             }
         }
     }
@@ -137,8 +144,10 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
      *
      * @param message a {@link StockUpdateMessage} object containing details about
      *                the stock update.
-     * @throws StockUpdateException If the lock cannot be acquired within the timeout period,
-     *                              indicating it is not possible to proceed with the requested operation.
+     * @throws StockUpdateException     If the lock cannot be acquired within the timeout period,
+     *                                  indicating it is not possible to proceed with the requested operation.
+     * @throws ProductNotFoundException If the product with the given {@code productId}
+     *                                  is not found in the database.
      */
     private void processStockUpdate(StockUpdateMessage message) {
         switch (message.getUpdateType()) {
@@ -154,12 +163,14 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
      *
      * @param message a {@link StockUpdateMessage} object containing details about
      *                the stock update.
-     * @throws StockUpdateException If the lock cannot be acquired within the timeout period,
-     *                              indicating it is not possible to proceed with the requested operation.
+     * @throws StockUpdateException     If the lock cannot be acquired within the timeout period,
+     *                                  indicating it is not possible to proceed with the requested operation.
+     * @throws ProductNotFoundException If the product with the given {@code productId}
+     *                                  is not found in the database.
      */
     private void handleStockReservation(StockUpdateMessage message) {
         // Get product lock
-        RLock lock = redissonClient.getLock(getLockKey(message.getProductId()));
+        RLock lock = redissonClient.getLock(getProductLockKey(message.getProductId()));
 
         try {
             tryLock(message.getProductId(), lock);
@@ -172,10 +183,10 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                         available,
                         message.getQuantity());
 
-                // Send order item cancelled request to queue
-                orderItemStreamService.sendOrderItemStatusUpdateMessage(
-                        message.getOrderId(),
+                // Update order item status to cancelled
+                updateOrderItem(
                         message.getOrderItemId(),
+                        message.getOrderId(),
                         message.getProductId(),
                         OrderItemStatus.CANCELLED,
                         "INSUFFICIENT_STOCK"
@@ -186,12 +197,13 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                         available,
                         message.getQuantity());
 
-                // Send order item confirmed request to queue
-                orderItemStreamService.sendOrderItemStatusUpdateMessage(
-                        message.getOrderId(),
+                // Update order item status to confirmed
+                updateOrderItem(
                         message.getOrderItemId(),
+                        message.getOrderId(),
                         message.getProductId(),
-                        OrderItemStatus.CONFIRMED
+                        OrderItemStatus.CONFIRMED,
+                        null
                 );
 
                 // Calc new stock level
@@ -220,22 +232,27 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
      *
      * @param message a {@link StockUpdateMessage} object containing details about
      *                the stock update.
-     * @throws StockUpdateException If the lock cannot be acquired within the timeout period,
-     *                              indicating it is not possible to proceed with the requested operation.
+     * @throws StockUpdateException     If the lock cannot be acquired within the timeout period,
+     *                                  indicating it is not possible to proceed with the requested operation.
+     * @throws ProductNotFoundException If the product with the given {@code productId}
+     *                                  is not found in the database.
+     * @throws NumberFormatException    If the stock level retrieved from the cache cannot
+     *                                  be parsed to an integer.
      */
     private void handleStockCancellation(StockUpdateMessage message) {
         // Get product lock
-        RLock lock = redissonClient.getLock(getLockKey(message.getProductId()));
+        RLock lock = redissonClient.getLock(getProductLockKey(message.getProductId()));
 
         try {
             tryLock(message.getProductId(), lock);
 
-            // Send order item cancelled request to queue
-            orderItemStreamService.sendOrderItemStatusUpdateMessage(
-                    message.getOrderId(),
+            // Update order item status to cancelled
+            updateOrderItem(
                     message.getOrderItemId(),
+                    message.getOrderId(),
                     message.getProductId(),
-                    OrderItemStatus.CONFIRMED
+                    OrderItemStatus.CANCELLED,
+                    null
             );
 
             int available = getCurrentStock(message.getProductId());
@@ -303,80 +320,40 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
 
     /**
      * Retrieves the current stock level for the specified product.
-     * <p>
-     * This method attempts to get the stock level from a cache (Redis). If the stock
-     * level is not available in the cache, it fetches the product information from
-     * the database and updates the cache.
-     * </p>
      *
      * @param productId The {@link UUID} representing the unique identifier of the product.
      *                  Must not be {@code null}.
      * @return The current stock level of the product as an integer.
      * @throws ProductNotFoundException If the product with the given {@code productId}
      *                                  is not found in the database.
-     * @throws NumberFormatException    If the stock level retrieved from the cache cannot
-     *                                  be parsed to an integer.
      */
     private int getCurrentStock(UUID productId) {
-        String stockKey = getStockKey(productId);
-
-        String currentStock = redisTemplate.opsForValue().get(stockKey);
-
+        // TODO: use redis cache
         // If stock not in cache, fetch from database
-        if (currentStock == null) {
-            Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new ProductNotFoundException(productId));
-            currentStock = String.valueOf(product.getStockLevel());
 
-            // Cache the stock with 1 hour expiry
-            redisTemplate.opsForValue().set(stockKey, currentStock, CACHE_EXPIRY);
-        }
-
-        return Integer.parseInt(currentStock);
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException(productId))
+                .getStockLevel();
     }
 
     /**
-     * Updates the stock level of a specific product. This method updates the stock level
-     * both in a cache and by sending an update request to the product stock level update queue.
+     * Updates the stock level of a specific product.
      *
      * @param productId     the unique identifier of the product whose stock level will be updated.
      * @param newStockLevel the new stock level for the product. Must be a non-negative integer.
      */
     private void updateStockLevel(UUID productId, int newStockLevel) {
-        String stockKey = getStockKey(productId);
+        //TODO: cache to redis and Send update stock level request to a queue
 
-        // Update cache
-        redisTemplate.opsForValue().set(stockKey, String.valueOf(newStockLevel));
-
-        // Send update stock level request to queue
-        productStreamService.sendProductStockLevelUpdateMessage(productId, newStockLevel);
+        productRepository.updateStockLevel(productId, newStockLevel);
     }
 
-    /**
-     * Utility method that constructs a unique stock key for a given product.
-     * The generated key combines a predefined prefix with the string representation
-     * of the provided {@link UUID} of the product.
-     *
-     * @param productId A {@link UUID} representing the unique identifier of the product.
-     *                  It must not be {@code null}.
-     * @return A {@link String} representing the unique stock key, created by appending the
-     * {@literal productId} to a predefined prefix.
-     */
-    private String getStockKey(UUID productId) {
-        return STOCK_VALUE_KEY_PREFIX + productId.toString();
-    }
-
-    /**
-     * Utility method to generate a unique lock key for a specific product.
-     * This key is typically used to manage stock locking operations for concurrency control.
-     *
-     * @param productId the {@link UUID} representing the unique identifier of the product.
-     *                  This is a required parameter and cannot be {@code null}.
-     * @return a {@link String} representing the lock key, which is a combination of
-     * {@literal STOCK_LOCK_KEY_PREFIX} and the {@code productId} in its string form.
-     */
-    private String getLockKey(UUID productId) {
-        return STOCK_LOCK_KEY_PREFIX + productId.toString();
+    private void updateOrderItem(UUID orderItemId, UUID orderId, UUID productId, OrderItemStatus status, String error) {
+        if (error != null) {
+            orderItemRepository.updateStatusAndError(orderItemId, productId, orderId, status, error);
+        } else {
+            orderItemRepository.updateStatus(orderItemId, productId, orderId, status);
+        }
     }
 
     /**
@@ -396,5 +373,9 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
     private StockUpdateMessage parseMessage(Map<String, String> message) throws JsonProcessingException {
         String messageJson = message.get(StreamFields.MESSAGE.getField());
         return objectMapper.readValue(messageJson, StockUpdateMessage.class);
+    }
+
+    private String getProductLockKey(UUID productId) {
+        return PRODUCT_LOCK_KEY_PREFIX + productId.toString();
     }
 }
