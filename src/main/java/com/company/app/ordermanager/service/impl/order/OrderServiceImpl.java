@@ -97,7 +97,7 @@ public class OrderServiceImpl implements OrderService {
          * */
 
         // Send stock reservation request to queue
-        stockStreamService.sendStockReservationMessage(savedOrder.getId(), orderItems);
+        stockStreamService.sendStockReservationMessage(savedOrder.getId(), savedOrder.getOrderItems());
 
         return objectMapper.convertValue(savedOrder, OrderDto.class);
     }
@@ -132,9 +132,9 @@ public class OrderServiceImpl implements OrderService {
 
         // Update order and its items
         order.setOrderItems(orderItems);
-        orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
 
         // Send stock reservation request to queue
-        stockStreamService.sendStockCancellationMessage(orderId, orderItems);
+        stockStreamService.sendStockCancellationMessage(savedOrder.getId(), savedOrder.getOrderItems());
     }
 }
