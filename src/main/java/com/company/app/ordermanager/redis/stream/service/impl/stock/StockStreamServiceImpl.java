@@ -4,6 +4,7 @@ import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.redis.stream.common.StreamFields;
 import com.company.app.ordermanager.redis.stream.common.StreamNames;
 import com.company.app.ordermanager.redis.stream.dto.StockUpdateMessage;
+import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamProcessor;
 import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,23 +33,23 @@ public class StockStreamServiceImpl implements StockStreamService {
         Assert.notNull(orderId, "Order ID must not be null");
         Assert.notNull(orderItems, "Order items must not be null");
 
-        try {
-            List<StockUpdateMessage> stockUpdateMessages = orderItems.stream()
-                    .map(item -> StockUpdateMessage.builder()
-                            .orderId(orderId)
-                            .orderItemId(item.getId())
-                            .updateType(StockUpdateMessage.UpdateType.RESERVE)
-                            .productId(item.getProduct().getId())
-                            .quantity(item.getQuantity())
-                            .build()
-                    ).toList();
+        List<StockUpdateMessage> stockUpdateMessages = orderItems.stream()
+                .map(item -> StockUpdateMessage.builder()
+                        .orderId(orderId)
+                        .orderItemId(item.getId())
+                        .updateType(StockUpdateMessage.UpdateType.RESERVE)
+                        .productId(item.getProduct().getId())
+                        .quantity(item.getQuantity())
+                        .build()
+                ).toList();
 
-            List<StreamMessageId> messageIds = publishStockUpdateMessages(stockUpdateMessages);
-
-            log.debug("Published order reservation messages with ID {} for order {}", messageIds, orderId);
-        } catch (IllegalStateException e) {
-            log.error("Failed to publish reservation messages for order {}. Error: {}", orderId, e.getMessage());
-        }
+        stockUpdateMessages.forEach(me -> {
+            try {
+                publishStockUpdateMessages(me);
+            } catch (JsonProcessingException e) {
+                log.error("Failed to publish reservation message for order item {}. Error: {}", me.getOrderItemId(), e.getMessage());
+            }
+        });
     }
 
     @Override
@@ -56,55 +57,47 @@ public class StockStreamServiceImpl implements StockStreamService {
         Assert.notNull(orderId, "Order ID must not be null");
         Assert.notNull(orderItems, "Items must not be null");
 
-        try {
-            List<StockUpdateMessage> stockUpdateMessages = orderItems.stream()
-                    .map(item -> StockUpdateMessage.builder()
-                            .orderId(orderId)
-                            .orderItemId(item.getId())
-                            .updateType(StockUpdateMessage.UpdateType.CANCEL)
-                            .productId(item.getProduct().getId())
-                            .quantity(item.getQuantity())
-                            .build()
-                    )
-                    .toList();
+        List<StockUpdateMessage> stockUpdateMessages = orderItems.stream()
+                .map(item -> StockUpdateMessage.builder()
+                        .orderId(orderId)
+                        .orderItemId(item.getId())
+                        .updateType(StockUpdateMessage.UpdateType.CANCEL)
+                        .productId(item.getProduct().getId())
+                        .quantity(item.getQuantity())
+                        .build()
+                )
+                .toList();
 
-            List<StreamMessageId> messageIds = publishStockUpdateMessages(stockUpdateMessages);
-
-            log.debug("Published order cancellation messages with IDs {} for order {}", messageIds, orderId);
-        } catch (IllegalStateException e) {
-            log.error("Failed to publish cancellation messages for order {}. Error: {}", orderId, e.getMessage());
-        }
+        stockUpdateMessages.forEach(me -> {
+            try {
+                publishStockUpdateMessages(me);
+            } catch (JsonProcessingException e) {
+                log.error("Failed to publish cancellation message for order item {}. Error: {}", me.getOrderItemId(), e.getMessage());
+            }
+        });
     }
 
     /**
-     * Publishes a list of stock update messages to a Redis stream.
-     * <p>
-     * This method takes a list of {@link StockUpdateMessage} objects, serializes them into JSON format,
-     * and publishes each message to a Redis stream identified by {@link StreamNames#STOCK_UPDATE}.
-     * It returns the list of {@link StreamMessageId} objects corresponding to the messages successfully published.
-     * </p>
+     * Publishes a stock update message to a Redis stream for processing by {@link StockStreamProcessor}.
      *
-     * @param messages a {@link List} of {@link StockUpdateMessage} objects to be published.
-     *                 Each message represents a stock update operation (e.g., reservation or cancellation).
-     * @return a {@link List} of {@link StreamMessageId} objects representing the identifiers of the messages
-     *         that were successfully published to the Redis stream.
-     * @throws IllegalStateException if a message cannot be serialized to JSON format or if there is an error
-     *                               during the publishing to the Redis stream.
+     * <p>This method serializes the provided {@link StockUpdateMessage} object into a JSON string
+     * and publishes it to the Redis stream identified by {@link StreamNames#STOCK_UPDATE_QUEUE}.
+     *
+     * @param message the {@link StockUpdateMessage} object containing details about the stock update to be published.
+     * @return the {@link StreamMessageId} of the message that was published to the stream.
+     * This ID can be used for tracking or debugging purposes.
+     * @throws JsonProcessingException if the {@code message} cannot
+     *                                 be serialized into JSON format by {@link ObjectMapper}.
      */
-    private List<StreamMessageId> publishStockUpdateMessages(List<StockUpdateMessage> messages) {
-        RStream<String, String> stream = redissonClient.getStream(StreamNames.STOCK_UPDATE.getKey());
+    private StreamMessageId publishStockUpdateMessages(StockUpdateMessage message) throws JsonProcessingException {
+        RStream<String, String> stream = redissonClient.getStream(StreamNames.STOCK_UPDATE_QUEUE.getKey());
 
-        return messages.stream().map(message -> {
-            String messageJson = null;
-            try {
-                messageJson = objectMapper.writeValueAsString(message);
-            } catch (JsonProcessingException e) {
-                throw new IllegalStateException("Failed to serialize stock update message", e);
-            }
+        String messageJson = objectMapper.writeValueAsString(message);
 
-            return stream.add(StreamAddArgs.entry(StreamFields.MESSAGE.getField(), messageJson));
-        }).toList();
+        StreamMessageId id = stream.add(StreamAddArgs.entry(StreamFields.MESSAGE.getField(), messageJson));
+
+        log.debug("Published stock update message with ID {}. Message: {}", id, messageJson);
+
+        return id;
     }
-
-
 }
