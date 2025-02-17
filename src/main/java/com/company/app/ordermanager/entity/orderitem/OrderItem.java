@@ -47,4 +47,7 @@ public class OrderItem {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderItemStatus status = OrderItemStatus.PROCESSING;
+
+    @Column(length = 1000)
+    private String error;
 }

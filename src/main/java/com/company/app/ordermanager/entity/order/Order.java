@@ -2,10 +2,12 @@ package com.company.app.ordermanager.entity.order;
 
 import com.company.app.ordermanager.entity.common.Auditable;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
+import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -39,11 +41,41 @@ public class Order extends Auditable {
     private String description;
 
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private OrderStatus status = OrderStatus.PROCESSING;
-
-    @Builder.Default
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OrderItem> orderItems = new HashSet<>();
+
+    @Transient
+    public OrderStatus getStatus() {
+        if (hasItemsWithStatus(OrderItemStatus.PROCESSING, OrderItemStatus.CANCELLING)) {
+            return OrderStatus.PROCESSING;
+        }
+        if (hasAnyItemWithStatus(OrderItemStatus.PROCESSING_FAILED)) {
+            return OrderStatus.PARTIALLY_CONFIRMED;
+        }
+        if (allItemsHaveStatus(OrderItemStatus.COMPLETED)) {
+            return OrderStatus.CONFIRMED;
+        }
+        if (allItemsHaveStatus(OrderItemStatus.CANCELLED)) {
+            return OrderStatus.CANCELLED;
+        }
+        return OrderStatus.UNKNOWN;
+    }
+
+    private boolean hasItemsWithStatus(OrderItemStatus... statuses) {
+        return orderItems.stream()
+                .map(OrderItem::getStatus)
+                .anyMatch(status -> Arrays.asList(statuses).contains(status));
+    }
+
+    private boolean hasAnyItemWithStatus(OrderItemStatus status) {
+        return orderItems.stream()
+                .map(OrderItem::getStatus)
+                .anyMatch(status::equals);
+    }
+
+    private boolean allItemsHaveStatus(OrderItemStatus status) {
+        return orderItems.stream()
+                .map(OrderItem::getStatus)
+                .allMatch(status::equals);
+    }
 }

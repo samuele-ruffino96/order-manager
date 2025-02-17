@@ -10,11 +10,13 @@ package com.company.app.ordermanager.entity.order;
  *   <li>{@link #CONFIRMED}: All items successfully processed
  *   <li>{@link #PARTIALLY_CONFIRMED}: Some items processed successfully, others failed
  *   <li>{@link #CANCELLED}: All items failed or order cancelled
+ *   <li>{@link #UNKNOWN}: Unknown state</li>
  * </ul>
  */
 public enum OrderStatus {
     PROCESSING,
     CONFIRMED,
     PARTIALLY_CONFIRMED,
-    CANCELLED
+    CANCELLED,
+    UNKNOWN
 }
