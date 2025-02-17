@@ -46,5 +46,5 @@ public class OrderItem {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderItemStatus status = OrderItemStatus.PENDING;
+    private OrderItemStatus status = OrderItemStatus.PROCESSING;
 }

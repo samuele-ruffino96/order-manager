@@ -80,7 +80,7 @@ public class OrderServiceImpl implements OrderService {
                             .product(product)
                             .quantity(itemDto.getQuantity())
                             .purchasePrice(product.getPrice())
-                            .status(OrderItemStatus.PENDING)
+                            .status(OrderItemStatus.PROCESSING)
                             .build();
                 })
                 .collect(Collectors.toSet());
