@@ -18,6 +18,7 @@ import org.redisson.api.stream.StreamAddArgs;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -43,11 +44,11 @@ public class StockStreamServiceImpl implements StockStreamService {
                     )
                     .collect(Collectors.toSet());
 
-            StreamMessageId messageId = publishStockUpdateMessage(orderId, items, StockUpdateMessage.UpdateType.RESERVE);
+            List<StreamMessageId> messageIds = publishStockUpdateMessages(orderId, items, StockUpdateMessage.UpdateType.RESERVE);
 
-            log.debug("Published order reservation message with ID {} for order {}", messageId, orderId);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to publish reservation message for order {}. Error: {}", orderId, e.getMessage());
+            log.debug("Published order reservation messages with ID {} for order {}", messageIds, orderId);
+        } catch (IllegalStateException e) {
+            log.error("Failed to publish reservation messages for order {}. Error: {}", orderId, e.getMessage());
         }
     }
 
@@ -65,12 +66,47 @@ public class StockStreamServiceImpl implements StockStreamService {
                     )
                     .collect(Collectors.toSet());
 
-            StreamMessageId messageId = publishStockUpdateMessage(orderId, items, StockUpdateMessage.UpdateType.CANCEL);
+            List<StreamMessageId> messageIds = publishStockUpdateMessages(orderId, items, StockUpdateMessage.UpdateType.CANCEL);
 
-            log.debug("Published order cancellation message with ID {} for order {}", messageId, orderId);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to publish cancellation message for order {}. Error: {}", orderId, e.getMessage());
+            log.debug("Published order cancellation messages with IDs {} for order {}", messageIds, orderId);
+        } catch (IllegalStateException e) {
+            log.error("Failed to publish cancellation messages for order {}. Error: {}", orderId, e.getMessage());
         }
+    }
+
+    /**
+     * Responsible for publishing stock update messages to a Redis stream for processing.
+     * The method processes a set of stock update items related to an order and sends
+     * them to the appropriate Redis stream.
+     *
+     * @param orderId    the unique identifier of the order for which the stock update is being performed.
+     * @param items      the set of items involved in the stock update.
+     * @param updateType the type of update being performed.
+     * @return A <code>List</code> of {@link StreamMessageId} representing the identifiers
+     * of the messages pushed to the Redis stream.
+     * @throws IllegalStateException If an error occurs during the serialization of any
+     *                                 {@link StockUpdateMessage} objects into JSON strings.
+     */
+    private List<StreamMessageId> publishStockUpdateMessages(UUID orderId, Set<StockUpdateItem> items, StockUpdateMessage.UpdateType updateType) {
+        RStream<String, String> stream = redissonClient.getStream(StreamNames.STOCK_UPDATE.getKey());
+
+        return items.stream().map(item -> {
+            StockUpdateMessage message = StockUpdateMessage.builder()
+                    .orderId(orderId)
+                    .updateType(updateType)
+                    .productId(item.getProductId())
+                    .quantity(item.getQuantity())
+                    .build();
+
+            String messageJson = null;
+            try {
+                messageJson = objectMapper.writeValueAsString(message);
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException("Failed to serialize stock update message", e);
+            }
+
+            return stream.add(StreamAddArgs.entry(StreamFields.MESSAGE.getField(), messageJson));
+        }).toList();
     }
 
     /**
@@ -81,20 +117,7 @@ public class StockStreamServiceImpl implements StockStreamService {
      * @param orderId    the unique identifier of the order for which the stock update is being performed.
      * @param items      the set of items involved in the stock update.
      * @param updateType the type of update being performed.
-     * @return the {@link StreamMessageId} of the added message in the Redis stream.
+     * @return the {@link List<StreamMessageId>} of the added message in the Redis stream.
      * @throws JsonProcessingException if there is an issue serializing the {@link StockUpdateMessage} to JSON string.
      */
-    private StreamMessageId publishStockUpdateMessage(UUID orderId, Set<StockUpdateItem> items, StockUpdateMessage.UpdateType updateType) throws JsonProcessingException {
-        RStream<String, String> stream = redissonClient.getStream(StreamNames.STOCK_UPDATE.getKey());
-
-        StockUpdateMessage message = StockUpdateMessage.builder()
-                .orderId(orderId)
-                .updateType(updateType)
-                .items(items)
-                .build();
-
-        String messageJson = objectMapper.writeValueAsString(message);
-
-        return stream.add(StreamAddArgs.entry(StreamFields.MESSAGE.getField(), messageJson));
-    }
 }
