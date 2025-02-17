@@ -42,6 +42,8 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
     private static final String STOCK_LOCK_KEY_PREFIX = "product:lock:";
     private static final String STOCK_VALUE_KEY_PREFIX = "stock:";
 
+    private static final int STREAM_BATCH_SIZE = 1;
+    private static final Duration STREAM_WAIT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration LOCK_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration CACHE_EXPIRY = Duration.ofHours(1);
 
@@ -50,7 +52,6 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
     private final StringRedisTemplate redisTemplate;
     private final OrderItemStreamService orderItemStreamService;
     private final ProductStreamService productStreamService;
-
     private final ProductRepository productRepository;
 
     private RStream<String, String> stream;
@@ -77,15 +78,15 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         }
     }
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 2000)
     public void processStockUpdateMessages() {
         // Read new messages from the stream using the new API
         Map<StreamMessageId, Map<String, String>> entries = stream.readGroup(
                 GROUP_NAME,
                 CONSUMER_NAME,
                 StreamReadGroupArgs.greaterThan(StreamMessageId.ALL)
-                        .count(1)
-                        .timeout(Duration.ofMillis(5000))
+                        .count(STREAM_BATCH_SIZE)
+                        .timeout(STREAM_WAIT_TIMEOUT)
         );
 
         for (Map.Entry<StreamMessageId, Map<String, String>> entry : entries.entrySet()) {
