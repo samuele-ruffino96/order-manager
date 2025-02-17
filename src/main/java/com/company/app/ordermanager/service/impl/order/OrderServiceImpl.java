@@ -104,7 +104,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void cancelOrderItem(UUID orderId, Set<UUID> orderItemIds) {
+    public void cancelOrderItems(UUID orderId, Set<UUID> orderItemIds) {
         Assert.notNull(orderId, "Order ID must not be null");
         Assert.notNull(orderItemIds, "Order item IDs must not be null");
 

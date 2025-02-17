@@ -43,5 +43,5 @@ public interface OrderService {
      * @throws NullPointerException     if either {@code orderId} or the {@code orderItemIds} set
      *                                  is {@code null}
      */
-    void cancelOrderItem(UUID orderId, Set<UUID> orderItemIds);
+    void cancelOrderItems(UUID orderId, Set<UUID> orderItemIds);
 }
