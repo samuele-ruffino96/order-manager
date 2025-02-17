@@ -1,8 +1,10 @@
 package com.company.app.ordermanager.redis.stream.service.impl;
 
 import com.company.app.ordermanager.dto.orderitem.CreateOrderItemDto;
+import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.redis.stream.common.StreamFields;
 import com.company.app.ordermanager.redis.stream.common.StreamNames;
+import com.company.app.ordermanager.redis.stream.dto.StockUpdateItem;
 import com.company.app.ordermanager.redis.stream.dto.StockUpdateMessage;
 import com.company.app.ordermanager.redis.stream.service.api.StockStreamService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -18,6 +20,7 @@ import org.springframework.util.Assert;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -27,11 +30,19 @@ public class StockStreamServiceImpl implements StockStreamService {
     private final RedissonClient redissonClient;
 
     @Override
-    public void requestStockReservation(UUID orderId, Set<CreateOrderItemDto> items) {
+    public void requestStockReservation(UUID orderId, Set<CreateOrderItemDto> createOrderItemDtos) {
         Assert.notNull(orderId, "Order ID must not be null");
-        Assert.notNull(items, "Items must not be null");
+        Assert.notNull(createOrderItemDtos, "Items must not be null");
 
         try {
+            Set<StockUpdateItem> items = createOrderItemDtos.stream()
+                    .map(item -> StockUpdateItem.builder()
+                            .productId(item.getProductId())
+                            .quantity(item.getQuantity())
+                            .build()
+                    )
+                    .collect(Collectors.toSet());
+
             StreamMessageId messageId = publishStockUpdateMessage(orderId, items, StockUpdateMessage.UpdateType.RESERVE);
 
             log.debug("Published order reservation message with ID {} for order {}", messageId, orderId);
@@ -41,11 +52,19 @@ public class StockStreamServiceImpl implements StockStreamService {
     }
 
     @Override
-    public void requestStockCancellation(UUID orderId, Set<CreateOrderItemDto> items) {
+    public void requestStockCancellation(UUID orderId, Set<OrderItem> orderItems) {
         Assert.notNull(orderId, "Order ID must not be null");
-        Assert.notNull(items, "Items must not be null");
+        Assert.notNull(orderItems, "Items must not be null");
 
         try {
+            Set<StockUpdateItem> items = orderItems.stream()
+                    .map(item -> StockUpdateItem.builder()
+                            .productId(item.getProduct().getId())
+                            .quantity(item.getQuantity())
+                            .build()
+                    )
+                    .collect(Collectors.toSet());
+
             StreamMessageId messageId = publishStockUpdateMessage(orderId, items, StockUpdateMessage.UpdateType.CANCEL);
 
             log.debug("Published order cancellation message with ID {} for order {}", messageId, orderId);
@@ -65,7 +84,7 @@ public class StockStreamServiceImpl implements StockStreamService {
      * @return the {@link StreamMessageId} of the added message in the Redis stream.
      * @throws JsonProcessingException if there is an issue serializing the {@link StockUpdateMessage} to JSON string.
      */
-    private StreamMessageId publishStockUpdateMessage(UUID orderId, Set<CreateOrderItemDto> items, StockUpdateMessage.UpdateType updateType) throws JsonProcessingException {
+    private StreamMessageId publishStockUpdateMessage(UUID orderId, Set<StockUpdateItem> items, StockUpdateMessage.UpdateType updateType) throws JsonProcessingException {
         RStream<String, String> stream = redissonClient.getStream(StreamNames.STOCK_UPDATE.getKey());
 
         StockUpdateMessage message = StockUpdateMessage.builder()
