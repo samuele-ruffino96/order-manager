@@ -7,15 +7,16 @@ import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.product.Product;
+import com.company.app.ordermanager.redis.stream.service.api.StockStreamService;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
 import com.company.app.ordermanager.repository.api.product.ProductRepository;
 import com.company.app.ordermanager.service.api.order.OrderService;
-import com.company.app.ordermanager.service.api.stock.StockReservationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.util.Map;
 import java.util.Objects;
@@ -32,11 +33,13 @@ public class OrderServiceImpl implements OrderService {
     private final ProductRepository productRepository;
     private final ObjectMapper objectMapper;
 
-    private final StockReservationService stockReservationService;
+    private final StockStreamService stockStreamService;
 
     @Override
     @Transactional
     public OrderDto createOrder(CreateOrderDto createOrderDto) {
+        Assert.notNull(createOrderDto, "Create order DTO must not be null");
+
         // Fetch all products in a single query
         Set<UUID> productIds = createOrderDto.getItems().stream()
                 .map(CreateOrderItemDto::getProductId)
@@ -91,8 +94,28 @@ public class OrderServiceImpl implements OrderService {
          *  Simple approach: Transactional outbox pattern + Polling publisher pattern
          * */
         // Send stock reservation request to queue
-        stockReservationService.requestStockReservation(savedOrder.getId(), createOrderDto.getItems());
+        stockStreamService.requestStockReservation(savedOrder.getId(), createOrderDto.getItems());
 
         return objectMapper.convertValue(savedOrder, OrderDto.class);
+    }
+
+    @Override
+    public void cancelOrderItem(UUID orderId, UUID orderItemId) {
+        Assert.notNull(orderId, "Order ID must not be null");
+        Assert.notNull(orderItemId, "Order item ID must not be null");
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Order with ID %s not found", orderId)
+                ));
+
+        OrderItem orderItem = order.getOrderItems().stream()
+                .filter(i -> i.getId().equals(orderItemId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Order item with ID %s not found in order with ID %s", orderItemId, orderId)
+                ));
+
+
     }
 }

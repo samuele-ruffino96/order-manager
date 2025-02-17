@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.service.api.stock;
+package com.company.app.ordermanager.redis.stream.service.api;
 
 import com.company.app.ordermanager.dto.orderitem.CreateOrderItemDto;
 
@@ -6,14 +6,11 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * The {@code StockReservationService} interface defines operations for managing stock reservations and cancellations
+ * The {@code StockStreamService} interface defines operations for managing stock reservations and cancellations
  * for a given order. It serves as a bridge to communicate stock update requests to the stock management system
  * using messaging systems like Redis streams.
- *
- * <p>Implementations of this interface are responsible for preparing and publishing these requests to the appropriate
- * messaging infrastructure, ensuring seamless communication with the stock management services.</p>
  */
-public interface StockReservationService {
+public interface StockStreamService {
     /**
      * Perform stock reservation requests for a given order. This method prepares and publishes a reservation message
      * to a Redis stream to inform the stock management system to reserve stock for the specified order items.
