@@ -67,12 +67,6 @@ public class Order extends Auditable {
                 .anyMatch(status -> Arrays.asList(statuses).contains(status));
     }
 
-    private boolean hasAnyItemWithStatus(OrderItemStatus status) {
-        return orderItems.stream()
-                .map(OrderItem::getStatus)
-                .anyMatch(status::equals);
-    }
-
     private boolean allItemsHaveStatus(OrderItemStatus status) {
         return orderItems.stream()
                 .map(OrderItem::getStatus)
