@@ -31,11 +31,11 @@ services:
     image: redis-custom:7.2.4
     volumes:
       - redis-data:/data
-      ports:
-        - "6379:6379"
-      environment:
-        REDIS_PORT: 6379
-        ALLOW_EMPTY_PASSWORD: yes
+    ports:
+      - "6379:6379"
+    environment:
+      REDIS_PORT: 6379
+      ALLOW_EMPTY_PASSWORD: yes
 
 volumes:
   redis-data:
