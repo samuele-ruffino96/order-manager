@@ -37,12 +37,12 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class StockStreamProcessorImpl implements StockStreamProcessor {
     private static final String GROUP_NAME = "stock-processor-group";
-    private static final String CONSUMER_NAME = "consumer-1";
+    private static final String CONSUMER_NAME = "consumer" + UUID.randomUUID();
     private static final String PRODUCT_LOCK_KEY_PREFIX = "product:lock:";
 
     private static final int STREAM_BATCH_SIZE = 1;
-    private static final Duration STREAM_WAIT_TIMEOUT = Duration.ofSeconds(5);
-    private static final Duration LOCK_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration STREAM_WAIT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration LOCK_TIMEOUT = Duration.ofSeconds(10);
 
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
@@ -205,7 +205,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         } catch (InterruptedException e) {
             handleLockAcquisitionFailure(message.getProductId(), e);
         } finally {
-            releaseLock(lock);
+            releaseProductLock(lock);
         }
 
     }
