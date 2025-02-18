@@ -48,9 +48,9 @@ public class OrderItem {
     @Column(nullable = false)
     private OrderItemStatus status = OrderItemStatus.PROCESSING;
 
+    @Enumerated(EnumType.STRING)
+    private OrderItemStatusReason reason;
+
     @Version
     private long version;
-
-    @Column(length = 1000)
-    private String error;
 }
