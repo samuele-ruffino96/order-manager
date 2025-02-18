@@ -7,8 +7,8 @@ import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.product.Product;
-import com.company.app.ordermanager.exception.order.OrderNotFoundException;
-import com.company.app.ordermanager.exception.orderitem.OrderItemsNotFoundException;
+import com.company.app.ordermanager.exception.product.ProductNotFoundException;
+import com.company.app.ordermanager.exception.product.ProductVersionMismatchException;
 import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamService;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
 import com.company.app.ordermanager.repository.api.product.ProductRepository;
@@ -54,7 +54,7 @@ public class OrderServiceImpl implements OrderService {
             Set<UUID> missingProducts = productIds.stream()
                     .filter(id -> !productsMap.containsKey(id))
                     .collect(Collectors.toSet());
-            throw new IllegalArgumentException("Products not found: " + missingProducts);
+            throw new ProductNotFoundException(missingProducts);
         }
 
         // Create order
@@ -70,10 +70,7 @@ public class OrderServiceImpl implements OrderService {
 
                     // Validate product version to prevent stale data modifications
                     if (!Objects.equals(itemDto.getProductVersion(), (product.getVersion()))) {
-                        throw new IllegalStateException(
-                                String.format("Product version mismatch for product %s. Expected: %d, Found: %d",
-                                        product.getId(), itemDto.getProductVersion(), product.getVersion())
-                        );
+                        throw new ProductVersionMismatchException(product.getId(), itemDto.getProductVersion(), product.getVersion());
                     }
 
                     return OrderItem.builder()
