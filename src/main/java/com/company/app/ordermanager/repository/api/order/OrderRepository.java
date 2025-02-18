@@ -33,8 +33,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, QuerydslPre
                         case 1 -> Optional.of(path.eq(it.next()));
                         case 2 -> Optional.of(path.between(it.next(), it.next()));
                         default -> throw new IllegalArgumentException(
-                                "Expected 1 date for equality or 2 dates for range search, got: " + values.size());
-
+                                "Expected 1 date for equality or 2 dates for range search, got: " + values.size()
+                        );
                     };
                 }
         );
