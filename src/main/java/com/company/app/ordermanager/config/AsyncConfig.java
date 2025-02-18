@@ -16,21 +16,13 @@ public class AsyncConfig implements AsyncConfigurer {
     @Override
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-
         executor.setCorePoolSize(5);
-
         executor.setMaxPoolSize(10);
-
         executor.setQueueCapacity(25);
-
         executor.setKeepAliveSeconds(60);
-
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
         executor.setThreadNamePrefix("AsyncThread-");
-
         executor.initialize();
-
         return executor;
     }
 

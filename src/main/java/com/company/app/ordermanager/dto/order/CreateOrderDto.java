@@ -8,6 +8,11 @@ import lombok.Data;
 
 import java.util.Set;
 
+/**
+ * Represents the data transfer object (DTO) for creating an order.
+ * This class encapsulates the necessary details for creating a customer order,
+ * including customer information, order description, and a collection of order items.
+ */
 @Data
 public class CreateOrderDto {
     @NotBlank(message = "Customer name is required")

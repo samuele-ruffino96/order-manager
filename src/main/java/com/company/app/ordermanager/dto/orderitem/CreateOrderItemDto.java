@@ -6,6 +6,14 @@ import lombok.Data;
 
 import java.util.UUID;
 
+/**
+ * Represents the data transfer object (DTO) for creating an order item.
+ * This class encapsulates the required details to specify a product
+ * and quantity when adding it as an item to an order.
+ * <p>
+ * Fields include the product identifier, quantity, and product version
+ * used for optimistic locking.
+ */
 @Data
 public class CreateOrderItemDto {
     @NotNull(message = "Product ID is required")
