@@ -1,6 +1,6 @@
-package com.company.app.ordermanager.controller.order.impl;
+package com.company.app.ordermanager.controller.orderitem.impl;
 
-import com.company.app.ordermanager.controller.order.api.OrderItemController;
+import com.company.app.ordermanager.controller.orderitem.api.OrderItemController;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;

@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.controller.order.api;
+package com.company.app.ordermanager.controller.orderitem.api;
 
 import org.springframework.web.bind.annotation.RequestParam;
 
