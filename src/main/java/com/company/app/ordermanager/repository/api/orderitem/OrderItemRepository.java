@@ -2,6 +2,7 @@ package com.company.app.ordermanager.repository.api.orderitem;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
+import com.company.app.ordermanager.entity.orderitem.OrderItemStatusReason;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,23 +15,19 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
     @Modifying
     @Query("UPDATE OrderItem oi SET oi.status = :status " +
             "WHERE oi.id = :orderItemId " +
-            "AND oi.product.id = :productId " +
-            "AND oi.order.id = :orderId")
+            "AND oi.version = :version")
     int updateStatus(@Param("orderItemId") UUID orderItemId,
-                     @Param("productId") UUID productId,
-                     @Param("orderId") UUID orderId,
-                     @Param("status") OrderItemStatus status);
+                     @Param("status") OrderItemStatus status,
+                     @Param("version") long version);
 
     @Modifying
-    @Query("UPDATE OrderItem oi SET oi.status = :status, oi.error = :error " +
+    @Query("UPDATE OrderItem oi SET oi.status = :status, oi.reason = :reason " +
             "WHERE oi.id = :orderItemId " +
-            "AND oi.product.id = :productId " +
-            "AND oi.order.id = :orderId")
-    int updateStatusAndError(@Param("orderItemId") UUID orderItemId,
-                             @Param("productId") UUID productId,
-                             @Param("orderId") UUID orderId,
-                             @Param("status") OrderItemStatus status,
-                             @Param("error") String error);
+            "AND oi.version = :version")
+    int updateStatusAndReason(@Param("orderItemId") UUID orderItemId,
+                              @Param("status") OrderItemStatus status,
+                              @Param("version") long version,
+                              @Param("reason") OrderItemStatusReason reason);
 
     @Query("SELECT oi.version FROM OrderItem oi WHERE oi.id = :orderItemId")
     Optional<Long> findVersionById(@Param("orderItemId") UUID orderItemId);
