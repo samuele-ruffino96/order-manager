@@ -170,14 +170,14 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                 // Calc new stock level
                 int updatedStockLevel = available - message.getQuantity();
 
+                // Update stock level
+                productService.updateProductStockLevel(message.getProductId(), updatedStockLevel);
+
                 log.debug("Updated stock level for product: {}. Available: {}, Requested: {}, New: {}",
                         message.getProductId(),
                         available,
                         message.getQuantity(),
                         updatedStockLevel);
-
-                // Update stock level
-                productService.updateProductStockLevel(message.getProductId(), updatedStockLevel);
             }
         } catch (InterruptedException e) {
             log.warn("Interrupted while acquiring lock for product: {}. Error: {}", message.getProductId(), e.getMessage());
@@ -219,14 +219,14 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
             // Calc new stock level
             int updatedStockLevel = available + message.getQuantity();
 
+            // Update stock level
+            productService.updateProductStockLevel(message.getProductId(), updatedStockLevel);
+
             log.debug("Updated stock level for product: {}. Available: {}, Requested: {}, New: {}",
                     message.getProductId(),
                     available,
                     message.getQuantity(),
                     updatedStockLevel);
-
-            // Update stock level
-            productService.updateProductStockLevel(message.getProductId(), updatedStockLevel);
         } catch (InterruptedException e) {
             log.warn("Interrupted while acquiring lock for product: {}. Error: {}", message.getProductId(), e.getMessage());
 
