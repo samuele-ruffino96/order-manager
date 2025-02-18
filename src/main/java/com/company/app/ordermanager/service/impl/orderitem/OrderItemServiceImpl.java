@@ -1,35 +1,83 @@
 package com.company.app.ordermanager.service.impl.orderitem;
 
-import com.company.app.ordermanager.dto.orderitem.OrderItemDto;
+import com.company.app.ordermanager.dto.orderitem.CreateOrderItemDto;
+import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatusReason;
+import com.company.app.ordermanager.entity.product.Product;
 import com.company.app.ordermanager.exception.orderitem.OrderItemNotFoundException;
+import com.company.app.ordermanager.exception.product.ProductNotFoundException;
+import com.company.app.ordermanager.exception.product.ProductVersionMismatchException;
 import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamService;
 import com.company.app.ordermanager.repository.api.orderitem.OrderItemRepository;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.company.app.ordermanager.service.api.product.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderItemServiceImpl implements OrderItemService {
+    private final ProductService productService;
     private final OrderItemRepository orderItemRepository;
     private final StockStreamService stockStreamService;
-    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
-    public Set<OrderItemDto> cancelOrderItems(Set<UUID> orderItemIds) {
+    public Set<OrderItem> createOrderItems(Order order, Set<CreateOrderItemDto> orderItemDtos) {
+        Assert.notNull(order, "Order must not be null");
+        Assert.notNull(orderItemDtos, "Order item DTOs must not be null");
+
+        // Fetch all products
+        Set<UUID> productIds = orderItemDtos.stream().map(CreateOrderItemDto::getProductId).collect(Collectors.toSet());
+        Map<UUID, Product> productsMap = productService.findAllById(productIds).stream().collect(Collectors.toMap(Product::getId, Function.identity()));
+
+        // Validate that all products exist
+        if (productsMap.size() != productIds.size()) {
+            Set<UUID> missingProducts = productIds.stream()
+                    .filter(id -> !productsMap.containsKey(id))
+                    .collect(Collectors.toSet());
+            throw new ProductNotFoundException(missingProducts);
+        }
+
+        // Create order items
+        Set<OrderItem> orderItems = orderItemDtos.stream()
+                .map(itemDto -> {
+                    Product product = productsMap.get(itemDto.getProductId());
+
+                    // Validate product version to prevent stale data modifications
+                    if (!Objects.equals(itemDto.getProductVersion(), (product.getVersion()))) {
+                        throw new ProductVersionMismatchException(product.getId(), itemDto.getProductVersion(), product.getVersion());
+                    }
+
+                    return OrderItem.builder()
+                            .order(order)
+                            .product(product)
+                            .quantity(itemDto.getQuantity())
+                            .purchasePrice(product.getPrice())
+                            .status(OrderItemStatus.PROCESSING)
+                            .build();
+                })
+                .collect(Collectors.toSet());
+
+        return orderItemRepository.saveAll(orderItems).stream().collect(Collectors.toSet());
+    }
+
+    @Override
+    @Transactional
+    public Set<OrderItem> cancelOrderItems(Set<UUID> orderItemIds) {
         Assert.notNull(orderItemIds, "Order item IDs must not be null");
 
         // Fetch order items
@@ -59,7 +107,7 @@ public class OrderItemServiceImpl implements OrderItemService {
         // Send stock reservation request to queue
         stockStreamService.sendStockCancellationMessage(savedOrderItems);
 
-        return savedOrderItems.stream().map(orderItem -> objectMapper.convertValue(orderItem, OrderItemDto.class)).collect(Collectors.toSet());
+        return savedOrderItems;
     }
 
     @Override
