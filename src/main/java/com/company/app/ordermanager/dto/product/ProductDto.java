@@ -12,4 +12,5 @@ public class ProductDto {
     private String description;
     private BigDecimal price;
     private int stockLevel;
+    private long version;
 }
