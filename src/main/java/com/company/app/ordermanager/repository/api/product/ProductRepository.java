@@ -9,6 +9,14 @@ import org.springframework.data.repository.query.Param;
 import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID> {
+    /**
+     * Updates the stock level of a product with the specified ID in the database.
+     *
+     * @param productId  the unique identifier of the product whose stock level is to be updated
+     * @param stockLevel the new stock level value to set for the specified product
+     * @return the number of rows affected by the update operation
+     * @throws IllegalArgumentException if {@code productId} or {@code stockLevel} are invalid
+     */
     @Modifying
     @Query("UPDATE Product p SET p.stockLevel = :stockLevel WHERE p.id = :productId")
     int updateStockLevel(@Param("productId") UUID productId, @Param("stockLevel") int stockLevel);
