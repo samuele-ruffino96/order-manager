@@ -84,8 +84,8 @@ public class OrderControllerImpl {
 
     @DeleteMapping("/{id}")
     @Operation(
-            summary = "Delete order by ID",
-            description = "Deletes an order and cancels all associated order items, releasing reserved stock"
+            summary = "Cancel order by ID",
+            description = "Cancels an order and cancels all associated order items, releasing reserved stock"
     )
     @ApiResponse(responseCode = "200", description = "Order successfully deleted")
     @ApiResponse(responseCode = "404", description = "Order not found")
