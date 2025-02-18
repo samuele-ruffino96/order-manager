@@ -24,7 +24,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
      * @throws IllegalArgumentException if any parameter is invalid.
      */
     @Modifying
-    @Query("UPDATE OrderItem oi SET oi.status = :status " +
+    @Query("UPDATE OrderItem oi SET oi.status = :status, oi.version = oi.version + 1 " +
             "WHERE oi.id = :orderItemId " +
             "AND oi.version = :version")
     int updateStatus(@Param("orderItemId") UUID orderItemId,
@@ -44,7 +44,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
      * @throws IllegalArgumentException if any parameter is invalid.
      */
     @Modifying
-    @Query("UPDATE OrderItem oi SET oi.status = :status, oi.reason = :reason " +
+    @Query("UPDATE OrderItem oi SET oi.status = :status, oi.reason = :reason, oi.version = oi.version + 1 " +
             "WHERE oi.id = :orderItemId " +
             "AND oi.version = :version")
     int updateStatusAndReason(@Param("orderItemId") UUID orderItemId,
