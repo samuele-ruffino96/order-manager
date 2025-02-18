@@ -1,11 +1,9 @@
 package com.company.app.ordermanager.service.impl.product;
 
-import com.company.app.ordermanager.dto.product.ProductDto;
 import com.company.app.ordermanager.entity.product.Product;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.repository.api.product.ProductRepository;
 import com.company.app.ordermanager.service.api.product.ProductService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -13,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -23,16 +23,19 @@ public class ProductServiceImpl implements ProductService {
     private static final Duration STOCK_VALUE_CACHE_EXPIRY = Duration.ofHours(1);
 
     private final ProductRepository productRepository;
-    private final ObjectMapper objectMapper;
     private final StringRedisTemplate redisTemplate;
 
     @Override
-    public ProductDto getProduct(UUID productId) {
+    public Product findById(UUID productId) {
         Assert.notNull(productId, "Product ID must not be null");
 
         return productRepository.findById(productId)
-                .map(product -> objectMapper.convertValue(product, ProductDto.class))
                 .orElseThrow(() -> new ProductNotFoundException(productId));
+    }
+
+    @Override
+    public Set<Product> findAllById(Set<UUID> productIds) {
+        return productRepository.findAllById(productIds).stream().collect(Collectors.toSet());
     }
 
     @Override
