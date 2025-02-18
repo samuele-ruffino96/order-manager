@@ -19,7 +19,6 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -29,13 +28,11 @@ public class StockStreamServiceImpl implements StockStreamService {
     private final RedissonClient redissonClient;
 
     @Override
-    public void sendStockReservationMessage(UUID orderId, Set<OrderItem> orderItems) {
-        Assert.notNull(orderId, "Order ID must not be null");
+    public void sendStockReservationMessage(Set<OrderItem> orderItems) {
         Assert.notNull(orderItems, "Order items must not be null");
 
         List<StockUpdateMessage> stockUpdateMessages = orderItems.stream()
                 .map(item -> StockUpdateMessage.builder()
-                        .orderId(orderId)
                         .orderItemId(item.getId())
                         .expectedOrderItemVersion(item.getVersion())
                         .updateType(StockUpdateMessage.UpdateType.RESERVE)
@@ -54,13 +51,11 @@ public class StockStreamServiceImpl implements StockStreamService {
     }
 
     @Override
-    public void sendStockCancellationMessage(UUID orderId, Set<OrderItem> orderItems) {
-        Assert.notNull(orderId, "Order ID must not be null");
+    public void sendStockCancellationMessage(Set<OrderItem> orderItems) {
         Assert.notNull(orderItems, "Items must not be null");
 
         List<StockUpdateMessage> stockUpdateMessages = orderItems.stream()
                 .map(item -> StockUpdateMessage.builder()
-                        .orderId(orderId)
                         .orderItemId(item.getId())
                         .expectedOrderItemVersion(item.getVersion())
                         .updateType(StockUpdateMessage.UpdateType.CANCEL)
