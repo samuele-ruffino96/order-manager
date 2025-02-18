@@ -240,7 +240,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         } catch (InterruptedException e) {
             handleLockAcquisitionFailure(message.getProductId(), e);
         } finally {
-            releaseLock(lock);
+            releaseProductLock(lock);
         }
     }
 
@@ -250,11 +250,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         }
     }
 
-    /**
-     * Provides functionality to release a reentrant lock held by the current thread.
-     * This method ensures that the lock is released only if it is held by the thread
-     */
-    private void releaseLock(RLock lock) {
+    private void releaseProductLock(RLock lock) {
         if (lock.isHeldByCurrentThread()) {
             lock.unlock();
         }
