@@ -2,7 +2,6 @@ package com.company.app.ordermanager.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +20,6 @@ public class ObjectMapperConfig {
         return JsonMapper.builder()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .serializationInclusion(JsonInclude.Include.NON_NULL)
-                .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false)
                 .findAndAddModules()
                 .build();
     }
