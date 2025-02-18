@@ -2,6 +2,7 @@ package com.company.app.ordermanager.redis.stream.service.impl.stock;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatusReason;
+import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.exception.stock.StockLockException;
 import com.company.app.ordermanager.redis.stream.common.StreamFields;
 import com.company.app.ordermanager.redis.stream.common.StreamNames;
@@ -50,6 +51,22 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
 
     private RStream<String, String> stream;
 
+    @PostConstruct
+    private void init() {
+        initializeStream();
+    }
+
+    /**
+     * Periodically processes stock update messages from a message stream.
+     * This method reads stock update messages from a stream, parses them,
+     * processes the corresponding stock updates, and acknowledges the messages
+     * to mark them as processed. Messages that cause exceptions during processing
+     * are either skipped for reprocessing (in some cases) or acknowledged
+     * to prevent indefinite retries. It also performs stream trimming to limit
+     * its size and maintain performance.
+     * <p>
+     * This method is automatically invoked with a fixed delay of 2000ms.
+     */
     @Scheduled(fixedDelay = 2000)
     public void processStockUpdateMessages() {
         // Read new messages from the stream using the new API
@@ -60,6 +77,8 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                         .count(STREAM_BATCH_SIZE)
                         .timeout(STREAM_WAIT_TIMEOUT)
         );
+
+        log.debug("Read {} messages from stream", entries.size());
 
         for (Map.Entry<StreamMessageId, Map<String, String>> entry : entries.entrySet()) {
             StreamMessageId messageId = entry.getKey();
@@ -95,38 +114,24 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         }
     }
 
-    @PostConstruct
-    private void init() {
-        initializeStream();
-    }
-
-    private void initializeStream() {
-        stream = redissonClient.getStream(StreamNames.STOCK_UPDATE_QUEUE.getKey());
-        try {
-            StreamCreateGroupArgs groupArgs = StreamCreateGroupArgs
-                    .name(GROUP_NAME)
-                    .makeStream()    // Creates the stream if it doesn't exist, removing need for our manual creation
-                    .id(StreamMessageId.ALL);  // Start consuming from the beginning of the stream
-
-            stream.createGroup(groupArgs);
-
-            log.info("Created consumer group: {}", GROUP_NAME);
-        } catch (RedisException e) {
-            if (e.getMessage() != null && e.getMessage().contains("BUSYGROUP")) {
-                log.info("Consumer group {} already exists", GROUP_NAME);
-            } else {
-                log.error("Failed to initialize consumer group. Error: {}", e.getMessage());
-            }
-        }
-    }
-
-    private void processStockUpdate(StockUpdateMessage message) {
+    @Override
+    public void processStockUpdate(StockUpdateMessage message) {
         switch (message.getUpdateType()) {
             case RESERVE -> handleStockReservation(message);
             case CANCEL -> handleStockCancellation(message);
         }
     }
 
+    /**
+     * Handles the reservation of stock for a given product. Determines if the requested quantity
+     * can be reserved and updates the stock levels and order item status accordingly.
+     *
+     * @param message the {@link StockUpdateMessage} object containing details for stock reservation such as
+     *                the product ID, order item ID, quantity to be reserver, and expected order item version.
+     * @throws IllegalArgumentException if the {@code message} contains invalid or inconsistent data.
+     * @throws ProductNotFoundException if no product is found with the product ID within the stock update message
+     * @throws StockLockException       if the method is interrupted while acquiring the product lock
+     */
     private void handleStockReservation(StockUpdateMessage message) {
         // Get product lock
         RLock lock = redissonClient.getLock(getProductLockKey(message.getProductId()));
@@ -175,13 +180,26 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                 productService.updateProductStockLevel(message.getProductId(), updatedStockLevel);
             }
         } catch (InterruptedException e) {
+            log.warn("Interrupted while acquiring lock for product: {}. Error: {}", message.getProductId(), e.getMessage());
+
             handleStockLockAcquisitionFailure(message.getProductId());
         } finally {
+            log.debug("Releasing lock for product: {}", message.getProductId());
+
             releaseLock(lock);
         }
 
     }
 
+    /**
+     * Handles the stock cancellation process by updating stock levels and order item status.
+     *
+     * @param message the {@link StockUpdateMessage} object containing details for stock cancellation such as
+     *                the product ID, order item ID, quantity to be cancelled, and expected order item version.
+     * @throws IllegalArgumentException if the {@code message} contains invalid or inconsistent data.
+     * @throws ProductNotFoundException if no product is found with the product ID within the stock update message
+     * @throws StockLockException       if the method is interrupted while acquiring the product lock
+     */
     private void handleStockCancellation(StockUpdateMessage message) {
         // Get product lock
         RLock lock = redissonClient.getLock(getProductLockKey(message.getProductId()));
@@ -210,8 +228,12 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
             // Update stock level
             productService.updateProductStockLevel(message.getProductId(), updatedStockLevel);
         } catch (InterruptedException e) {
+            log.warn("Interrupted while acquiring lock for product: {}. Error: {}", message.getProductId(), e.getMessage());
+
             handleStockLockAcquisitionFailure(message.getProductId());
         } finally {
+            log.debug("Releasing lock for product: {}", message.getProductId());
+
             releaseLock(lock);
         }
     }
@@ -228,9 +250,35 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         }
     }
 
+    /**
+     * Handles the failure to acquire a stock lock for a given product and throw a custom exception.
+     *
+     * @param productId the unique identifier of the product for which the lock acquisition failed
+     * @throws StockLockException
+     */
     private void handleStockLockAcquisitionFailure(UUID productId) {
         Thread.currentThread().interrupt();
         throw new StockLockException("Failed to acquire lock for product: " + productId.toString());
+    }
+
+    private void initializeStream() {
+        stream = redissonClient.getStream(StreamNames.STOCK_UPDATE_QUEUE.getKey());
+        try {
+            StreamCreateGroupArgs groupArgs = StreamCreateGroupArgs
+                    .name(GROUP_NAME)
+                    .makeStream()    // Creates the stream if it doesn't exist, removing need for our manual creation
+                    .id(StreamMessageId.ALL);  // Start consuming from the beginning of the stream
+
+            stream.createGroup(groupArgs);
+
+            log.info("Created consumer group: {}", GROUP_NAME);
+        } catch (RedisException e) {
+            if (e.getMessage() != null && e.getMessage().contains("BUSYGROUP")) {
+                log.info("Consumer group {} already exists", GROUP_NAME);
+            } else {
+                log.error("Failed to initialize consumer group. Error: {}", e.getMessage());
+            }
+        }
     }
 
     private StockUpdateMessage parseMessage(Map<String, String> message) throws JsonProcessingException {
