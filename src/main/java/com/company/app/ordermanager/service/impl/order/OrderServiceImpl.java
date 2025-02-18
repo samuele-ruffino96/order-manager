@@ -75,11 +75,6 @@ public class OrderServiceImpl implements OrderService {
         // Set order items
         order.setOrderItems(orderItems);
 
-        /*
-         * TODO: We need to publish messages as part of the transaction that create order and order items
-         *  to prevent inconsistent order state, such as stuck orders management
-         *  We could use a simple approach like: Transactional outbox pattern + Polling publisher pattern.
-         * */
         // Send stock reservation request to queue
         stockStreamService.sendStockReservationMessage(savedOrder.getOrderItems());
 
