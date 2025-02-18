@@ -79,12 +79,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Utility method that constructs a unique stock key for a given product.
-     * The generated key combines a predefined prefix with the string representation
-     * of the provided {@link UUID} of the product.
+     * Generates a unique key for storing or retrieving stock values in Redis for a specific product.
      *
-     * @param productId A {@link UUID} representing the unique identifier of the product.
-     * @return A {@link String} representing the unique stock key, created by appending the {@code productId} to a predefined prefix.
+     * @param productId a {@link UUID} representing the unique identifier of the product.
+     * @return a {@link String} representing the Redis key for the stock value of the product.
      */
     private String getStockValueKey(UUID productId) {
         return STOCK_VALUE_KEY_PREFIX + productId.toString();
