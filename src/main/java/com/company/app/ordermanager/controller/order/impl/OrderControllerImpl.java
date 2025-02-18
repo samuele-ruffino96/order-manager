@@ -6,11 +6,18 @@ import com.company.app.ordermanager.service.api.order.OrderService;
 import com.company.app.ordermanager.view.JsonViews;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.querydsl.core.types.Predicate;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.querydsl.binding.QuerydslPredicate;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -18,29 +25,71 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/orders")
+@Tag(name = "Orders", description = "Order management endpoints")
 public class OrderControllerImpl {
     private final OrderService orderService;
 
     @GetMapping
     @JsonView(JsonViews.ListView.class)
-    public Page<Order> getOrdersList(@QuerydslPredicate(root = Order.class) Predicate predicate, Pageable pageable) {
+    @Operation(
+            summary = "Get a list of orders",
+            description = "Retrieves a paginated list of orders with optional filtering using QueryDSL predicates"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Successfully retrieved orders",
+            useReturnTypeSchema = true
+    )
+    public Page<Order> getOrdersList(
+            @Parameter(description = "Filter criteria using QueryDSL") @QuerydslPredicate(root = Order.class) Predicate predicate,
+            @Parameter(description = "Pagination parameters") Pageable pageable) {
         return orderService.findAll(predicate, pageable);
     }
 
     @GetMapping("/{id}")
     @JsonView(JsonViews.DetailView.class)
-    public Order getOrderById(@PathVariable("id") UUID id) {
+    @Operation(
+            summary = "Get order by ID",
+            description = "Retrieves detailed information about a specific order"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Order found",
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = Order.class)
+            )
+    )
+    @ApiResponse(responseCode = "404", description = "Order not found")
+    public Order getOrderById(@Parameter(description = "UUID of the order to retrieve") @PathVariable("id") UUID id) {
         return orderService.findById(id);
     }
 
     @PostMapping
     @JsonView(JsonViews.DetailView.class)
-    public Order createOrder(@Valid @RequestBody CreateOrderDto order) {
+    @Operation(
+            summary = "Create a new order",
+            description = "Creates a new order with the provided details and initiates stock reservation"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Order created successfully",
+            useReturnTypeSchema = true
+    )
+    @ApiResponse(responseCode = "400", description = "Invalid order data")
+    @ApiResponse(responseCode = "404", description = "Referenced product not found")
+    public Order createOrder(@Parameter(description = "Order creation details", required = true) @Valid @RequestBody CreateOrderDto order) {
         return orderService.createOrder(order);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteOrderById(@PathVariable("id") UUID id) {
+    @Operation(
+            summary = "Delete order by ID",
+            description = "Deletes an order and cancels all associated order items, releasing reserved stock"
+    )
+    @ApiResponse(responseCode = "200", description = "Order successfully deleted")
+    @ApiResponse(responseCode = "404", description = "Order not found")
+    public void deleteOrderById(@Parameter(description = "UUID of the order to delete") @PathVariable("id") UUID id) {
         orderService.deleteById(id);
     }
 }
