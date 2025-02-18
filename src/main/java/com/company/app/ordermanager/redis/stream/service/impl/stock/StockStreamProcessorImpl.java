@@ -203,7 +203,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
                 productService.updateProductStockLevel(message.getProductId(), updatedStockLevel);
             }
         } catch (InterruptedException e) {
-            handleLockAcquisitionFailure(message.getProductId(), e);
+            handleLockAcquisitionFailure(message.getProductId());
         } finally {
             releaseProductLock(lock);
         }
@@ -238,7 +238,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
             // Update stock level
             productService.updateProductStockLevel(message.getProductId(), updatedStockLevel);
         } catch (InterruptedException e) {
-            handleLockAcquisitionFailure(message.getProductId(), e);
+            handleLockAcquisitionFailure(message.getProductId());
         } finally {
             releaseProductLock(lock);
         }
@@ -246,7 +246,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
 
     private void tryLock(UUID productId, RLock lock) throws InterruptedException {
         if (!lock.tryLock(LOCK_TIMEOUT.getSeconds(), TimeUnit.SECONDS)) {
-            throw new StockUpdateException("Could not acquire lock for product: " + productId.toString());
+            throw new StockLockException("Could not acquire lock for product: " + productId.toString());
         }
     }
 
@@ -256,9 +256,9 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
         }
     }
 
-    private void handleLockAcquisitionFailure(UUID productId, InterruptedException e) {
+    private void handleLockAcquisitionFailure(UUID productId) {
         Thread.currentThread().interrupt();
-        throw new StockUpdateException("Failed to acquire lock for product: " + productId.toString(), e);
+        throw new StockLockException("Failed to acquire lock for product: " + productId.toString());
     }
 
     private StockUpdateMessage parseMessage(Map<String, String> message) throws JsonProcessingException {
