@@ -111,8 +111,11 @@ public class OrderItemServiceImpl implements OrderItemService {
     }
 
     @Override
-    public void updateOrderItemStatus(UUID orderItemId, OrderItemStatus status, long version) {
-        int updatedRows = orderItemRepository.updateStatus(orderItemId, status, version);
+    public void updateOrderItemStatus(UUID orderItemId, OrderItemStatus status, long orderItemVersion) {
+        Assert.notNull(orderItemId, "Order item ID must not be null");
+        Assert.notNull(status, "Order item status must not be null");
+
+        int updatedRows = orderItemRepository.updateStatus(orderItemId, status, orderItemVersion);
 
         if (updatedRows == 0) {
             log.warn("Order item with ID {} not found. Unable to update status.", orderItemId);
