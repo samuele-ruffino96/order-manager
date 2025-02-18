@@ -2,6 +2,8 @@ package com.company.app.ordermanager.entity.orderitem;
 
 import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.product.Product;
+import com.company.app.ordermanager.view.JsonViews;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,6 +24,7 @@ import java.util.UUID;
 @EqualsAndHashCode(of = "id")
 @ToString(exclude = {"order", "product"})
 @Builder
+@JsonView(JsonViews.ListView.class)
 @Entity
 @Table(name = "order_items")
 public class OrderItem {
@@ -29,10 +32,12 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @JsonView(JsonViews.InternalView.class)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
+    @JsonView(JsonViews.InternalView.class)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
@@ -48,9 +53,11 @@ public class OrderItem {
     @Column(nullable = false)
     private OrderItemStatus status = OrderItemStatus.PROCESSING;
 
+    @JsonView(JsonViews.DetailView.class)
     @Enumerated(EnumType.STRING)
     private OrderItemStatusReason reason;
 
+    @JsonView(JsonViews.InternalView.class)
     @Version
     private long version;
 }

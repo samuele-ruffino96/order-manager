@@ -1,5 +1,7 @@
 package com.company.app.ordermanager.entity.common;
 
+import com.company.app.ordermanager.view.JsonViews;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
@@ -29,10 +31,12 @@ import java.time.Instant;
 @EntityListeners(AuditingEntityListener.class)
 @SuperBuilder
 public abstract class Auditable {
+    @JsonView(JsonViews.ListView.class)
     @CreatedDate
     @Column(name = "created_at", columnDefinition = "TIMESTAMP")
     private Instant createdAt;
 
+    @JsonView(JsonViews.InternalView.class)
     @LastModifiedDate
     @Column(name = "updated_at", columnDefinition = "TIMESTAMP")
     private Instant updatedAt;

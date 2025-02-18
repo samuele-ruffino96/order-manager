@@ -3,6 +3,9 @@ package com.company.app.ordermanager.entity.order;
 import com.company.app.ordermanager.entity.common.Auditable;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
+import com.company.app.ordermanager.view.JsonViews;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.querydsl.core.annotations.QueryEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -27,7 +30,9 @@ import java.util.UUID;
 @EqualsAndHashCode(of = "id", callSuper = false)
 @ToString(exclude = "orderItems")
 @SuperBuilder
+@JsonView(JsonViews.ListView.class)
 @Entity
+@QueryEntity
 @Table(name = "orders")
 public class Order extends Auditable {
     @Id
@@ -40,10 +45,12 @@ public class Order extends Auditable {
     @Column(length = 1000)
     private String description;
 
+    @JsonView(JsonViews.DetailView.class)
     @Builder.Default
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OrderItem> orderItems = new HashSet<>();
 
+    @JsonView(JsonViews.DetailView.class)
     @Transient
     public OrderStatus getStatus() {
         if (allItemsHaveStatus(OrderItemStatus.CONFIRMED)) {
