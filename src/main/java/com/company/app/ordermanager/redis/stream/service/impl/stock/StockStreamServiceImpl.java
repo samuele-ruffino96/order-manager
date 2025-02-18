@@ -4,7 +4,6 @@ import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.redis.stream.common.StreamFields;
 import com.company.app.ordermanager.redis.stream.common.StreamNames;
 import com.company.app.ordermanager.redis.stream.dto.StockUpdateMessage;
-import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamProcessor;
 import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -75,16 +74,13 @@ public class StockStreamServiceImpl implements StockStreamService {
     }
 
     /**
-     * Publishes a stock update message to a Redis stream for processing by {@link StockStreamProcessor}.
+     * Publishes a stock update message to the stock update queue using the Redisson stream API.
+     * This method serializes the provided {@link StockUpdateMessage} into JSON format and writes
+     * it to a Redis stream for further processing.
      *
-     * <p>This method serializes the provided {@link StockUpdateMessage} object into a JSON string
-     * and publishes it to the Redis stream identified by {@link StreamNames#STOCK_UPDATE_QUEUE}.
-     *
-     * @param message the {@link StockUpdateMessage} object containing details about the stock update to be published.
-     * @return the {@link StreamMessageId} of the message that was published to the stream.
-     * This ID can be used for tracking or debugging purposes.
-     * @throws JsonProcessingException if the {@code message} cannot
-     *                                 be serialized into JSON format by {@link ObjectMapper}.
+     * @param message the {@link StockUpdateMessage} containing stock update details
+     * @return the {@link StreamMessageId} of the published message
+     * @throws JsonProcessingException if the {@link ObjectMapper} fails to serialize the message
      */
     private StreamMessageId publishStockUpdateMessages(StockUpdateMessage message) throws JsonProcessingException {
         RStream<String, String> stream = redissonClient.getStream(StreamNames.STOCK_UPDATE_QUEUE.getKey());

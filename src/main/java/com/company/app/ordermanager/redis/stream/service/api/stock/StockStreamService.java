@@ -4,29 +4,24 @@ import com.company.app.ordermanager.entity.orderitem.OrderItem;
 
 import java.util.Set;
 
-/**
- * The {@code StockStreamService} interface defines operations for managing stock reservations and cancellations
- * for a given order. It serves as a bridge to communicate stock update requests to the stock management system
- * using messaging systems like Redis streams.
- */
 public interface StockStreamService {
     /**
-     * This method prepares and publishes a reservation message to a Redis stream to inform
-     * the stock management system to reserve stock for the specified order items.
+     * Sends stock reservation messages for the provided set of order items.
+     * This method generates reservation messages for the given order items and publishes them
+     * to a Redis stream for processing by downstream consumers.
      *
-     * @param items the set of {@link OrderItem} order items object for which stock should be reserved.
-     *              This parameter must not be {@literal null}.
-     * @throws IllegalArgumentException if the {@code orderId} or {@code items} parameter is {@literal null}.
+     * @param orderItems the set of {@link OrderItem} objects for which stock reservation messages should be sent
+     * @throws IllegalArgumentException if the input set of order items is null
      */
-    void sendStockReservationMessage(Set<OrderItem> items);
+    void sendStockReservationMessage(Set<OrderItem> orderItems);
 
     /**
-     * This method prepares and publishes a cancellation message to a Redis stream to informs
-     * the stock management system to cancel stock reservation for the specified order items.
+     * Sends stock cancellation messages for the provided set of order items.
+     * This method generates cancellation messages for the supplied order items and publishes them
+     * to a Redis stream for further processing.
      *
-     * @param items the set of {@link OrderItem} object in the order that need to be canceled.
-     *              This parameter must not be {@literal null}.
-     * @throws IllegalArgumentException if the {@code orderId} or {@code items} parameter is {@literal null}.
+     * @param orderItems the set of {@link OrderItem} objects for which stock cancellation messages should be sent
+     * @throws IllegalArgumentException if the input set of order items is null
      */
-    void sendStockCancellationMessage(Set<OrderItem> items);
+    void sendStockCancellationMessage(Set<OrderItem> orderItems);
 }
