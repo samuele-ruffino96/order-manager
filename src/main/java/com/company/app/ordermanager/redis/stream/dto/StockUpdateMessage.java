@@ -6,12 +6,9 @@ import lombok.Data;
 import java.util.UUID;
 
 /**
- * Represents a stock update message containing information crucial for updating stock levels
- * in inventory systems. The message includes details such as order identification,
- * item identification, type of update, product identification, and quantity.
- *
- * This class is typically used to communicate stock reservation or cancellation
- * instructions to inventory systems or services.
+ * Represents a message detailing a stock update operation, such as reserving or canceling
+ * stock for a specific product and order item. This class serves as a data transfer object
+ * encapsulating all necessary details for such operations.
  */
 @Data
 @Builder
