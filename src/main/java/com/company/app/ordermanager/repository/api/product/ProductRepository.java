@@ -18,6 +18,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
      * @throws IllegalArgumentException if {@code productId} or {@code stockLevel} are invalid
      */
     @Modifying
-    @Query("UPDATE Product p SET p.stockLevel = :stockLevel WHERE p.id = :productId")
+    @Query("UPDATE Product p SET p.stockLevel = :stockLevel, p.version = p.version + 1 " +
+            "WHERE p.id = :productId")
     int updateStockLevel(@Param("productId") UUID productId, @Param("stockLevel") int stockLevel);
 }
