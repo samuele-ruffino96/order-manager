@@ -2,9 +2,6 @@ package com.company.app.ordermanager.service.api.order;
 
 import com.company.app.ordermanager.dto.order.CreateOrderDto;
 import com.company.app.ordermanager.entity.order.Order;
-import com.company.app.ordermanager.exception.order.OrderNotFoundException;
-import com.company.app.ordermanager.exception.product.ProductNotFoundException;
-import com.company.app.ordermanager.exception.product.ProductVersionMismatchException;
 import com.querydsl.core.types.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

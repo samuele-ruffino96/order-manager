@@ -5,7 +5,6 @@ import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.exception.order.OrderNotFoundException;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
-import com.company.app.ordermanager.exception.product.ProductVersionMismatchException;
 import com.company.app.ordermanager.messaging.service.api.stock.StockMessageProducerService;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
 import com.company.app.ordermanager.service.api.order.OrderService;
@@ -88,7 +87,6 @@ public class OrderServiceImpl implements OrderService {
      * @return the newly created {@link Order} entity.
      * @throws IllegalArgumentException        if createOrderDto is null.
      * @throws ProductNotFoundException        if any referenced products in orderItemDtos are not found.
-     * @throws ProductVersionMismatchException if the product versions in orderItemDtos do not match the current product versions.
      */
     @Override
     @Transactional

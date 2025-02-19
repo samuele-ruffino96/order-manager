@@ -9,7 +9,6 @@ import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.product.Product;
 import com.company.app.ordermanager.exception.order.OrderNotFoundException;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
-import com.company.app.ordermanager.exception.product.ProductVersionMismatchException;
 import com.company.app.ordermanager.messaging.service.api.stock.StockMessageProducerService;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
@@ -179,19 +178,6 @@ class OrderServiceImplTest {
 
         // When/Then
         assertThrows(ProductNotFoundException.class, () ->
-                orderService.createOrder(createOrderDto)
-        );
-    }
-
-    @Test
-    void createOrder_WhenProductVersionMismatch_ShouldThrowException() {
-        // Given
-        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
-        when(orderItemService.createOrderItems(any(), any()))
-                .thenThrow(new ProductVersionMismatchException(UUID.randomUUID(), 1L, 2L));
-
-        // When/Then
-        assertThrows(ProductVersionMismatchException.class, () ->
                 orderService.createOrder(createOrderDto)
         );
     }

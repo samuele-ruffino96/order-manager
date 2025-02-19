@@ -8,7 +8,6 @@ import com.company.app.ordermanager.entity.orderitem.OrderItemStatusReason;
 import com.company.app.ordermanager.entity.product.Product;
 import com.company.app.ordermanager.exception.orderitem.OrderItemNotFoundException;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
-import com.company.app.ordermanager.exception.product.ProductVersionMismatchException;
 import com.company.app.ordermanager.messaging.service.api.stock.StockMessageProducerService;
 import com.company.app.ordermanager.repository.api.orderitem.OrderItemRepository;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -42,7 +40,6 @@ public class OrderItemServiceImpl implements OrderItemService {
      * @return A set of newly created and persisted {@link OrderItem} entities.
      * @throws IllegalArgumentException        if either the order or orderItemDtos is null.
      * @throws ProductNotFoundException        if any referenced products in orderItemDtos are not found.
-     * @throws ProductVersionMismatchException if the product versions in orderItemDtos do not match the current product versions.
      */
     @Override
     @Transactional
@@ -66,11 +63,6 @@ public class OrderItemServiceImpl implements OrderItemService {
         Set<OrderItem> orderItems = orderItemDtos.stream()
                 .map(itemDto -> {
                     Product product = productsMap.get(itemDto.getProductId());
-
-                    // Validate product version to prevent stale data modifications
-                    if (!Objects.equals(itemDto.getProductVersion(), (product.getVersion()))) {
-                        throw new ProductVersionMismatchException(product.getId(), itemDto.getProductVersion(), product.getVersion());
-                    }
 
                     return OrderItem.builder()
                             .order(order)

@@ -5,9 +5,6 @@ import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatusReason;
-import com.company.app.ordermanager.exception.orderitem.OrderItemNotFoundException;
-import com.company.app.ordermanager.exception.product.ProductNotFoundException;
-import com.company.app.ordermanager.exception.product.ProductVersionMismatchException;
 
 import java.util.Set;
 import java.util.UUID;
