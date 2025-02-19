@@ -75,7 +75,7 @@ public class RedisStreamStockMessageConsumer implements StockMessageConsumerServ
         Map<StreamMessageId, Map<String, String>> entries = stream.readGroup(
                 GROUP_NAME,
                 CONSUMER_NAME,
-                StreamReadGroupArgs.greaterThan(StreamMessageId.ALL)
+                StreamReadGroupArgs.neverDelivered()
                         .count(STREAM_BATCH_SIZE)
                         .timeout(STREAM_WAIT_TIMEOUT)
         );
