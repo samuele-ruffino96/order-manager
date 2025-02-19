@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.unittest;
+package com.company.app.ordermanager.unittest.repository;
 
 import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
@@ -33,22 +33,17 @@ class OrderItemRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        // Create test product
+        // Save test entities
         testProduct = Product.builder()
                 .name("Test Product")
+                .description("Test Description")
                 .price(new BigDecimal("99.99"))
                 .stockLevel(10)
                 .build();
-        entityManager.persist(testProduct);
-
-        // Create test order
         testOrder = Order.builder()
                 .customerName("Test Customer")
                 .description("Test Order")
                 .build();
-        entityManager.persist(testOrder);
-
-        // Create test order item
         testOrderItem = OrderItem.builder()
                 .order(testOrder)
                 .product(testProduct)
@@ -57,8 +52,10 @@ class OrderItemRepositoryTest {
                 .status(OrderItemStatus.PROCESSING)
                 .version(1)
                 .build();
-        entityManager.persist(testOrderItem);
 
+        entityManager.persist(testProduct);
+        entityManager.persist(testOrder);
+        entityManager.persist(testOrderItem);
         entityManager.flush();
         entityManager.clear();
     }
@@ -79,7 +76,6 @@ class OrderItemRepositoryTest {
         // Then
         assertThat(updatedRows).isEqualTo(1);
 
-        // Verify the update in database
         OrderItem updatedItem = entityManager.find(OrderItem.class, testOrderItem.getId());
         assertThat(updatedItem.getStatus()).isEqualTo(newStatus);
         assertThat(updatedItem.getVersion()).isEqualTo(currentVersion + 1);
@@ -101,7 +97,6 @@ class OrderItemRepositoryTest {
         // Then
         assertThat(updatedRows).isZero();
 
-        // Verify no changes in database
         OrderItem unchangedItem = entityManager.find(OrderItem.class, testOrderItem.getId());
         assertThat(unchangedItem.getStatus()).isEqualTo(OrderItemStatus.PROCESSING);
         assertThat(unchangedItem.getVersion()).isEqualTo(testOrderItem.getVersion());
@@ -125,7 +120,6 @@ class OrderItemRepositoryTest {
         // Then
         assertThat(updatedRows).isEqualTo(1);
 
-        // Verify the update in database
         OrderItem updatedItem = entityManager.find(OrderItem.class, testOrderItem.getId());
         assertThat(updatedItem.getStatus()).isEqualTo(newStatus);
         assertThat(updatedItem.getReason()).isEqualTo(reason);
@@ -150,7 +144,6 @@ class OrderItemRepositoryTest {
         // Then
         assertThat(updatedRows).isZero();
 
-        // Verify no changes in database
         OrderItem unchangedItem = entityManager.find(OrderItem.class, testOrderItem.getId());
         assertThat(unchangedItem.getStatus()).isEqualTo(OrderItemStatus.PROCESSING);
         assertThat(unchangedItem.getReason()).isNull();
