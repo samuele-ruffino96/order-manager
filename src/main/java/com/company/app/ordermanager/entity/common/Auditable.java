@@ -1,6 +1,7 @@
 package com.company.app.ordermanager.entity.common;
 
 import com.company.app.ordermanager.view.JsonViews;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
@@ -34,10 +35,12 @@ public abstract class Auditable {
     @JsonView(JsonViews.ListView.class)
     @CreatedDate
     @Column(name = "created_at", columnDefinition = "TIMESTAMP")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     private Instant createdAt;
 
     @JsonView(JsonViews.InternalView.class)
     @LastModifiedDate
     @Column(name = "updated_at", columnDefinition = "TIMESTAMP")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     private Instant updatedAt;
 }
