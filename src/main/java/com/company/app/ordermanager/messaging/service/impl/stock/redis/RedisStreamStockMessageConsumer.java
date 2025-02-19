@@ -1,12 +1,12 @@
-package com.company.app.ordermanager.messaging.service.impl.stock;
+package com.company.app.ordermanager.messaging.service.impl.stock.redis;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatusReason;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.exception.stock.StockLockException;
-import com.company.app.ordermanager.messaging.redis.StreamFields;
 import com.company.app.ordermanager.messaging.common.MessageChannels;
 import com.company.app.ordermanager.messaging.dto.StockUpdateMessage;
+import com.company.app.ordermanager.messaging.redis.StreamFields;
 import com.company.app.ordermanager.messaging.service.api.stock.StockMessageConsumerService;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
 import com.company.app.ordermanager.service.api.product.ProductService;
@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StockMessageConsumerServiceImpl implements StockMessageConsumerService {
+public class RedisStreamStockMessageConsumer implements StockMessageConsumerService {
     private static final String GROUP_NAME = "stock-processor-group";
     private static final String CONSUMER_NAME = "consumer" + UUID.randomUUID();
 

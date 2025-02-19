@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.messaging.service.impl.stock;
+package com.company.app.ordermanager.messaging.service.impl.stock.redis;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.messaging.common.MessageChannels;
@@ -22,7 +22,7 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StockMessageProducerServiceImpl implements StockMessageProducerService {
+public class RedisStreamStockMessageProducer implements StockMessageProducerService {
     private final ObjectMapper objectMapper;
     private final RedissonClient redissonClient;
 
