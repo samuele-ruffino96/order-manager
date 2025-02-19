@@ -86,7 +86,7 @@ class OrderItemServiceImplTest {
         Set<OrderItem> result = orderItemService.createOrderItems(testOrder, dtos);
 
         // Then
-        assertThat(result).hasSize(1);
+        assertThat(result).hasSize(dtos.size());
         OrderItem createdItem = result.iterator().next();
         assertThat(createdItem.getProduct()).isEqualTo(testProduct);
         assertThat(createdItem.getOrder()).isEqualTo(testOrder);
