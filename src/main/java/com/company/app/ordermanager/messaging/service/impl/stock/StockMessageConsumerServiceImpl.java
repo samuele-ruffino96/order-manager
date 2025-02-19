@@ -115,6 +115,14 @@ public class StockMessageConsumerServiceImpl implements StockMessageConsumerServ
         }
     }
 
+    /**
+     * Processes a stock update based on the type of the received message.
+     *
+     * @param message the {@link StockUpdateMessage} containing details about the stock update.
+     * @throws IllegalArgumentException if the {@code message} contains invalid or inconsistent data.
+     * @throws ProductNotFoundException if no product is found with the product ID within the stock update message
+     * @throws StockLockException if the method is interrupted while acquiring the product lock
+     */
     @Transactional
     @Override
     public void processStockUpdateMessage(StockUpdateMessage message) {
@@ -240,12 +248,25 @@ public class StockMessageConsumerServiceImpl implements StockMessageConsumerServ
         }
     }
 
+    /**
+     * Attempts to acquire a lock for a specified product within a defined timeout period.
+     * Throws an exception if the lock cannot be acquired within the timeout.
+     *
+     * @param productId the unique identifier of the product for which the lock is being attempted
+     * @param lock the lock object representing the lock to be acquired
+     * @throws InterruptedException if the current thread is interrupted while waiting to acquire the lock
+     */
     private void tryLock(UUID productId, RLock lock) throws InterruptedException {
         if (!lock.tryLock(LOCK_TIMEOUT.getSeconds(), TimeUnit.SECONDS)) {
             throw new StockLockException("Could not acquire lock for product: " + productId.toString());
         }
     }
 
+    /**
+     * Releases the provided lock if it is held by the current thread.
+     *
+     * @param lock the RLock instance to be released
+     */
     private void releaseLock(RLock lock) {
         if (lock.isHeldByCurrentThread()) {
             lock.unlock();
@@ -263,6 +284,21 @@ public class StockMessageConsumerServiceImpl implements StockMessageConsumerServ
         throw new StockLockException("Failed to acquire lock for product: " + productId.toString());
     }
 
+    /**
+     * Initializes a Redis stream for message consumption using Redisson.
+     * This method creates a consumer group for the specified stream and ensures the stream exists.
+     * If the consumer group already exists, it logs a message and does not attempt to recreate the group.
+     * Any errors encountered during the initialization are logged appropriately.
+     * <p>
+     * The stream is retrieved using the configured Redisson client and
+     * is associated with a message channel defined in the `MessageChannels` enum.
+     * The consumer group is created to start consuming messages from the beginning of the stream.
+     * <p>
+     * Exception Handling:
+     * - If the consumer group already exists (indicated by the "BUSYGROUP" Redis error),
+     *   a log entry is generated stating that the group already exists.
+     * - For other Redis-related errors, an error log is generated with the exception details.
+     */
     private void initializeStream() {
         stream = redissonClient.getStream(MessageChannels.STOCK_UPDATE_QUEUE.getKey());
         try {
@@ -283,11 +319,26 @@ public class StockMessageConsumerServiceImpl implements StockMessageConsumerServ
         }
     }
 
+    /**
+     * Parses a given message map to extract and deserialize a stock update message.
+     *
+     * @param message the map containing the message details, with keys representing
+     *                message fields and values representing their contents
+     * @return the deserialized StockUpdateMessage object extracted from the message map
+     * @throws JsonProcessingException if there is an error during the deserialization process
+     */
     private StockUpdateMessage parseMessage(Map<String, String> message) throws JsonProcessingException {
         String messageJson = message.get(StreamFields.MESSAGE.getField());
         return objectMapper.readValue(messageJson, StockUpdateMessage.class);
     }
 
+    /**
+     * Generates a lock key for the given product ID by combining a predefined prefix
+     * with the string representation of the product ID.
+     *
+     * @param productId the UUID of the product for which the lock key is generated
+     * @return the generated lock key as a string
+     */
     private String getProductLockKey(UUID productId) {
         return PRODUCT_LOCK_KEY_PREFIX + productId.toString();
     }

@@ -1,9 +1,9 @@
 package com.company.app.ordermanager.messaging.service.impl.stock;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
-import com.company.app.ordermanager.messaging.redis.StreamFields;
 import com.company.app.ordermanager.messaging.common.MessageChannels;
 import com.company.app.ordermanager.messaging.dto.StockUpdateMessage;
+import com.company.app.ordermanager.messaging.redis.StreamFields;
 import com.company.app.ordermanager.messaging.service.api.stock.StockMessageProducerService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +26,14 @@ public class StockMessageProducerServiceImpl implements StockMessageProducerServ
     private final ObjectMapper objectMapper;
     private final RedissonClient redissonClient;
 
+    /**
+     * Sends stock reservation messages for the provided set of order items.
+     * This method generates reservation messages for the given order items and publishes them
+     * to a Redis stream for processing by downstream consumers.
+     *
+     * @param orderItems the set of {@link OrderItem} objects for which stock reservation messages should be sent
+     * @throws IllegalArgumentException if the input set of order items is null
+     */
     @Override
     public void sendStockReservationMessage(Set<OrderItem> orderItems) {
         Assert.notNull(orderItems, "Order items must not be null");
@@ -49,6 +57,14 @@ public class StockMessageProducerServiceImpl implements StockMessageProducerServ
         });
     }
 
+    /**
+     * Sends stock cancellation messages for the provided set of order items.
+     * This method generates cancellation messages for the supplied order items and publishes them
+     * to a Redis stream for further processing.
+     *
+     * @param orderItems the set of {@link OrderItem} objects for which stock cancellation messages should be sent
+     * @throws IllegalArgumentException if the input set of order items is null
+     */
     @Override
     public void sendStockCancellationMessage(Set<OrderItem> orderItems) {
         Assert.notNull(orderItems, "Items must not be null");
