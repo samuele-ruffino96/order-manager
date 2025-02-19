@@ -83,7 +83,6 @@ class OrderServiceImplTest {
         CreateOrderItemDto itemDto = new CreateOrderItemDto();
         itemDto.setProductId(testProduct.getId());
         itemDto.setQuantity(2);
-        itemDto.setProductVersion(1L);
         createOrderDto.setItems(Set.of(itemDto));
     }
 

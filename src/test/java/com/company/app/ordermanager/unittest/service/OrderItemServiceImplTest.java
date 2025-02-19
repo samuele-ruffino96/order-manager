@@ -73,7 +73,6 @@ class OrderItemServiceImplTest {
         testOrderItemDto = new CreateOrderItemDto();
         testOrderItemDto.setProductId(PRODUCT_ID);
         testOrderItemDto.setQuantity(2);
-        testOrderItemDto.setProductVersion(1L);
     }
 
     @Test

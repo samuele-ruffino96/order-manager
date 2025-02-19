@@ -22,7 +22,4 @@ public class CreateOrderItemDto {
     @NotNull(message = "Quantity is required")
     @Min(value = 1, message = "Quantity must be at least 1")
     private int quantity;
-
-    @NotNull(message = "Product version is required")
-    private long productVersion;  // For optimistic locking
 }
