@@ -13,5 +13,5 @@ public interface StockMessageConsumerService {
      * @throws ProductNotFoundException if no product is found with the product ID within the stock update message
      * @throws StockLockException if the method is interrupted while acquiring the product lock
      */
-    void processStockUpdate(StockUpdateMessage message);
+    void processStockUpdateMessage(StockUpdateMessage message);
 }

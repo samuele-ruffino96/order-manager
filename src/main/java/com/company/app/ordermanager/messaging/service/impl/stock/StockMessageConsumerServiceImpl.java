@@ -89,7 +89,7 @@ public class StockMessageConsumerServiceImpl implements StockMessageConsumerServ
 
                 StockUpdateMessage stockUpdateMessage = parseMessage(message);
 
-                processStockUpdate(stockUpdateMessage);
+                processStockUpdateMessage(stockUpdateMessage);
 
                 // Acknowledge the message to mark it as processed
                 stream.ack(GROUP_NAME, messageId);
@@ -115,7 +115,7 @@ public class StockMessageConsumerServiceImpl implements StockMessageConsumerServ
     }
 
     @Override
-    public void processStockUpdate(StockUpdateMessage message) {
+    public void processStockUpdateMessage(StockUpdateMessage message) {
         switch (message.getUpdateType()) {
             case RESERVE -> handleStockReservation(message);
             case CANCEL -> handleStockCancellation(message);
