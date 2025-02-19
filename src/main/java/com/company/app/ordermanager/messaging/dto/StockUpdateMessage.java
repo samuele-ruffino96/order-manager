@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.redis.stream.dto;
+package com.company.app.ordermanager.messaging.dto;
 
 import lombok.Builder;
 import lombok.Data;

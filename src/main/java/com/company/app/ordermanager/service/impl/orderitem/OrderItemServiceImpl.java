@@ -9,7 +9,7 @@ import com.company.app.ordermanager.entity.product.Product;
 import com.company.app.ordermanager.exception.orderitem.OrderItemNotFoundException;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.exception.product.ProductVersionMismatchException;
-import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamService;
+import com.company.app.ordermanager.messaging.service.api.stock.StockMessageProducerService;
 import com.company.app.ordermanager.repository.api.orderitem.OrderItemRepository;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
 import com.company.app.ordermanager.service.api.product.ProductService;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 public class OrderItemServiceImpl implements OrderItemService {
     private final ProductService productService;
     private final OrderItemRepository orderItemRepository;
-    private final StockStreamService stockStreamService;
+    private final StockMessageProducerService stockMessageProducerService;
 
     @Override
     @Transactional
@@ -105,7 +105,7 @@ public class OrderItemServiceImpl implements OrderItemService {
         Set<OrderItem> savedOrderItems = orderItemRepository.saveAll(orderItems).stream().collect(Collectors.toSet());
 
         // Send stock reservation request to queue
-        stockStreamService.sendStockCancellationMessage(savedOrderItems);
+        stockMessageProducerService.sendStockCancellationMessage(savedOrderItems);
 
         return savedOrderItems;
     }

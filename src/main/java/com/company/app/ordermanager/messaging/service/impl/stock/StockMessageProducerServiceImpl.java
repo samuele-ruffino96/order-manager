@@ -1,10 +1,10 @@
-package com.company.app.ordermanager.redis.stream.service.impl.stock;
+package com.company.app.ordermanager.messaging.service.impl.stock;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
-import com.company.app.ordermanager.redis.stream.common.StreamFields;
-import com.company.app.ordermanager.redis.stream.common.StreamNames;
-import com.company.app.ordermanager.redis.stream.dto.StockUpdateMessage;
-import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamService;
+import com.company.app.ordermanager.messaging.redis.StreamFields;
+import com.company.app.ordermanager.messaging.common.MessageChannels;
+import com.company.app.ordermanager.messaging.dto.StockUpdateMessage;
+import com.company.app.ordermanager.messaging.service.api.stock.StockMessageProducerService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StockStreamServiceImpl implements StockStreamService {
+public class StockMessageProducerServiceImpl implements StockMessageProducerService {
     private final ObjectMapper objectMapper;
     private final RedissonClient redissonClient;
 
@@ -83,7 +83,7 @@ public class StockStreamServiceImpl implements StockStreamService {
      * @throws JsonProcessingException if the {@link ObjectMapper} fails to serialize the message
      */
     private StreamMessageId publishStockUpdateMessages(StockUpdateMessage message) throws JsonProcessingException {
-        RStream<String, String> stream = redissonClient.getStream(StreamNames.STOCK_UPDATE_QUEUE.getKey());
+        RStream<String, String> stream = redissonClient.getStream(MessageChannels.STOCK_UPDATE_QUEUE.getKey());
 
         String messageJson = objectMapper.writeValueAsString(message);
 

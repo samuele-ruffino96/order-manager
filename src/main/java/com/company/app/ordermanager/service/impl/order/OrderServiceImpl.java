@@ -4,7 +4,7 @@ import com.company.app.ordermanager.dto.order.CreateOrderDto;
 import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.exception.order.OrderNotFoundException;
-import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamService;
+import com.company.app.ordermanager.messaging.service.api.stock.StockMessageProducerService;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
 import com.company.app.ordermanager.service.api.order.OrderService;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemService orderItemService;
-    private final StockStreamService stockStreamService;
+    private final StockMessageProducerService stockMessageProducerService;
 
     @Override
     public Page<Order> findAll(Predicate predicate, Pageable pageable) {
@@ -76,7 +76,7 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderItems(orderItems);
 
         // Send stock reservation request to queue
-        stockStreamService.sendStockReservationMessage(savedOrder.getOrderItems());
+        stockMessageProducerService.sendStockReservationMessage(savedOrder.getOrderItems());
 
         return savedOrder;
     }

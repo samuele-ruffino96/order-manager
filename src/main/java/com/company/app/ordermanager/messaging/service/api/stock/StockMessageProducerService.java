@@ -1,10 +1,10 @@
-package com.company.app.ordermanager.redis.stream.service.api.stock;
+package com.company.app.ordermanager.messaging.service.api.stock;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 
 import java.util.Set;
 
-public interface StockStreamService {
+public interface StockMessageProducerService {
     /**
      * Sends stock reservation messages for the provided set of order items.
      * This method generates reservation messages for the given order items and publishes them

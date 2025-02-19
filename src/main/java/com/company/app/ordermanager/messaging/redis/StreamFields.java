@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.redis.stream.common;
+package com.company.app.ordermanager.messaging.redis;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

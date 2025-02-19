@@ -1,13 +1,13 @@
-package com.company.app.ordermanager.redis.stream.service.impl.stock;
+package com.company.app.ordermanager.messaging.service.impl.stock;
 
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatusReason;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.exception.stock.StockLockException;
-import com.company.app.ordermanager.redis.stream.common.StreamFields;
-import com.company.app.ordermanager.redis.stream.common.StreamNames;
-import com.company.app.ordermanager.redis.stream.dto.StockUpdateMessage;
-import com.company.app.ordermanager.redis.stream.service.api.stock.StockStreamProcessor;
+import com.company.app.ordermanager.messaging.redis.StreamFields;
+import com.company.app.ordermanager.messaging.common.MessageChannels;
+import com.company.app.ordermanager.messaging.dto.StockUpdateMessage;
+import com.company.app.ordermanager.messaging.service.api.stock.StockMessageConsumerService;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
 import com.company.app.ordermanager.service.api.product.ProductService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StockStreamProcessorImpl implements StockStreamProcessor {
+public class StockMessageConsumerServiceImpl implements StockMessageConsumerService {
     private static final String GROUP_NAME = "stock-processor-group";
     private static final String CONSUMER_NAME = "consumer" + UUID.randomUUID();
 
@@ -262,7 +262,7 @@ public class StockStreamProcessorImpl implements StockStreamProcessor {
     }
 
     private void initializeStream() {
-        stream = redissonClient.getStream(StreamNames.STOCK_UPDATE_QUEUE.getKey());
+        stream = redissonClient.getStream(MessageChannels.STOCK_UPDATE_QUEUE.getKey());
         try {
             StreamCreateGroupArgs groupArgs = StreamCreateGroupArgs
                     .name(GROUP_NAME)

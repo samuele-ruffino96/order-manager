@@ -1,10 +1,10 @@
-package com.company.app.ordermanager.redis.stream.service.api.stock;
+package com.company.app.ordermanager.messaging.service.api.stock;
 
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.exception.stock.StockLockException;
-import com.company.app.ordermanager.redis.stream.dto.StockUpdateMessage;
+import com.company.app.ordermanager.messaging.dto.StockUpdateMessage;
 
-public interface StockStreamProcessor {
+public interface StockMessageConsumerService {
     /**
      * Processes a stock update based on the type of the received message.
      *
