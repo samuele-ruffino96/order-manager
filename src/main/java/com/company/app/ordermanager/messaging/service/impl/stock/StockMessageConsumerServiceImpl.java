@@ -69,6 +69,7 @@ public class StockMessageConsumerServiceImpl implements StockMessageConsumerServ
      * This method is automatically invoked with a fixed delay of 2000ms.
      */
     @Scheduled(fixedDelay = 2000)
+    @Transactional
     public void processStockUpdateMessages() {
         // Read new messages from the stream using the new API
         Map<StreamMessageId, Map<String, String>> entries = stream.readGroup(
@@ -123,7 +124,6 @@ public class StockMessageConsumerServiceImpl implements StockMessageConsumerServ
      * @throws ProductNotFoundException if no product is found with the product ID within the stock update message
      * @throws StockLockException if the method is interrupted while acquiring the product lock
      */
-    @Transactional
     @Override
     public void processStockUpdateMessage(StockUpdateMessage message) {
         switch (message.getUpdateType()) {
