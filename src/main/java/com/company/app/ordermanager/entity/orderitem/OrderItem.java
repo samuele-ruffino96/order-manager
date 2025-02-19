@@ -21,7 +21,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(of = "id")
+@EqualsAndHashCode(of = {"id", "product", "order", "purchasePrice"})
 @ToString(exclude = {"order", "product"})
 @Builder
 @JsonView(JsonViews.ListView.class)

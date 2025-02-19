@@ -20,7 +20,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(of = "id", callSuper = false)
+@EqualsAndHashCode(of = {"id", "name", "description"}, callSuper = false)
 @ToString
 @SuperBuilder
 @Entity
