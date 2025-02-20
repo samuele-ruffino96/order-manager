@@ -1,6 +1,4 @@
-# Order Manager Setup Guide
-
-This guide explains how to build and run the Order Manager service along with its supporting infrastructure.
+# Setup Guide
 
 ## Prerequisites
 
@@ -13,7 +11,7 @@ This guide explains how to build and run the Order Manager service along with it
 The project includes a build script that handles compiling the application and building the necessary Docker images.
 Here's how to use it:
 
-1. Navigate to the script directory or directly open a terminal into it:
+1. Navigate to the `/docker` directory or open a terminal into:
 
 2. Make the build script executable:
    ```bash
