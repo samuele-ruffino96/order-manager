@@ -1,4 +1,4 @@
-# Order Manager `0.0.1`
+# Order Manager `0.1`
 
 ## Project overview
 
