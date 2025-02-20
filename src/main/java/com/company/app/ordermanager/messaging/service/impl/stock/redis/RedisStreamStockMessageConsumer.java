@@ -305,7 +305,7 @@ public class RedisStreamStockMessageConsumer implements StockMessageConsumerServ
             StreamCreateGroupArgs groupArgs = StreamCreateGroupArgs
                     .name(GROUP_NAME)
                     .makeStream()    // Creates the stream if it doesn't exist, removing need for our manual creation
-                    .id(StreamMessageId.ALL);  // Start consuming from the beginning of the stream
+                    .id(StreamMessageId.NEWEST);  // Start consuming from Starts from latest message of the stream
 
             stream.createGroup(groupArgs);
 
