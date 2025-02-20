@@ -9,7 +9,7 @@ This Order Manager Service is a backend application designed to handle order pro
 The core technologies used in this project include:
 
 - **Java 17** and **Spring Boot 3** - Main development platform
-- **Redis** - Distributed caching and message queuing
+- **Redis** - Distributed caching, lock and message queuing
 - **MariaDB** - Primary database
 
 ### Project Structure
