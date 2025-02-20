@@ -9,6 +9,13 @@ services:
       REDIS_PORT: 6379
     ports:
       - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
 
   db:
     image: mariadb:11.4
@@ -19,13 +26,11 @@ services:
       MYSQL_DATABASE: orders
     ports:
       - "3306:3306"
-
-  meilisearch:
-    image: getmeili/meilisearch:v1.12
-    volumes:
-      - ./data.ms:/data.ms
-    ports:
-      - "7700:7700"
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis-custom:7.2.4
@@ -34,3 +39,22 @@ services:
     environment:
       REDIS_PORT: 6379
       ALLOW_EMPTY_PASSWORD: yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    volumes:
+      - ./data.ms:/data.ms
+    ports:
+      - "7700:7700"
+    healthcheck:
+      test: [ "CMD", "curl", "-X", "GET", "http://127.0.0.1:7700/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
