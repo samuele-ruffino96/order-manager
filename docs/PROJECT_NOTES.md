@@ -56,7 +56,7 @@ The order processing begins when a customer creates an order through the `OrderC
 more order items, which go through their own lifecycle independently. This approach allows for partial order fulfillment
 while maintaining system reliability.
 
-### Order Lifecycle Management
+#### Order Lifecycle Management
 
 When an order is created via `OrderServiceImpl`, it follows this sequence:
 
@@ -68,7 +68,7 @@ When an order is created via `OrderServiceImpl`, it follows this sequence:
 The order's overall status is computed dynamically based on its items' statuses, providing a clear view of the order's
 current state within the application.
 
-### Integration with Stock System
+#### Integration with Stock System
 
 The stock management integration uses an event-driven approach with message queues to handle stock updates
 asynchronously. This architectural decision:
@@ -87,7 +87,7 @@ The stock management system tries to addresses one of the core challenges in ord
 accurate inventory levels while handling multiple concurrent order requests. The implementation focuses on three key
 aspects: preventing race conditions, processing stock updates asynchronously, and managing concurrent access.
 
-### Distributed Locking Mechanism
+#### Distributed Locking Mechanism
 
 To prevent race conditions when multiple orders attempt to reserve the same product's stock simultaneously, the
 application uses a distributed locking strategy. When a stock update is needed, the system:
@@ -100,7 +100,7 @@ This mechanism ensures that stock modifications happen atomically, preventing ov
 performance. The implementation uses Redisson's `RLock`, which provides a robust distributed lock implementation with
 features like automatic lock release (in case of client crashes) and lock timeouts.
 
-### Asynchronous Processing
+#### Asynchronous Processing
 
 Stock updates are handled asynchronously through a message queue system. When an order is placed:
 
@@ -112,7 +112,7 @@ This approach decouples order creation from stock processing, improving system r
 
 ### 3. Data Layer Design
 
-### Entity Relationships
+#### Entity Relationships
 
 The domain model centers around three main entities: `Order`, `OrderItem`, and `Product`. Their relationships are
 structured to reflect real-world business rules.
@@ -122,7 +122,7 @@ both Order and Product. This design allows for flexible order composition while 
 relationship is implemented with JPA annotations, with careful consideration of fetch strategies to prevent unnecessary
 data fetching, improving application performance by loading related entities only when needed.
 
-### Dynamic Query Capabilities
+#### Dynamic Query Capabilities
 
 To support flexible order searching and filtering, the system implements dynamic query generation using QueryDSL. This
 allows the API to handle complex search criteria without hardcoding query patterns. The repository layer includes
@@ -145,7 +145,7 @@ This approach provides a flexible, type-safe way to build complex queries while 
 The API layer serves as the interface between clients and our business logic, providing a RESTful service that follows
 HTTP standards and best practices.
 
-### REST Endpoints Design
+#### REST Endpoints Design
 
 The REST API follows a resource-oriented architecture with clear naming conventions and appropriate HTTP method usage.
 Let's take as example the `OrderController` to illustrates this approach:
@@ -165,7 +165,7 @@ public class OrderControllerImpl {
 Each endpoint is documented with OpenAPI annotations, providing clear specifications for API consumers. The versioning
 in the URL path (/v1/) allows for future API evolution while maintaining backward compatibility.
 
-### Response View Customization
+#### Response View Customization
 
 The system implements a flexible response customization system using JSON Views to control what data is exposed in
 different contexts. This allows us to reuse the same entities while providing different levels of detail based on the
@@ -188,7 +188,7 @@ For example, when listing orders, the REST API return basic information, but whe
 response includes additional details like order items and their statuses. This approach reduces unnecessary data
 transfer and improves API performance.
 
-### Input Validation Strategy
+#### Input Validation Strategy
 
 Input validation was implemented using Jakarta Validation annotations on DTOs:
 
@@ -215,7 +215,7 @@ The caching strategy focuses on optimizing access to frequently requested data w
 the distributed system. The primary focus is on product stock levels, which require both high availability and strong
 consistency.
 
-### Stock Level Caching
+#### Stock Level Caching
 
 Instead of querying the database for each stock check, the system implements a caching layer that stores current stock
 levels in memory. When a service needs to check product stock, it first consults the cache:
@@ -238,7 +238,7 @@ public int getProductStockLevel(UUID productId) {
 The cache is configured with a reasonable time-to-live (TTL) of one hour, balancing data freshness with system
 performance. This approach significantly reduces database load for one of our most frequently accessed pieces of data.
 
-### Cache Consistency
+#### Cache Consistency
 
 To maintain cache consistency when stock levels change, it was followed a "write-through" caching pattern. When a stock
 level update occurs, the system:
@@ -255,7 +255,7 @@ The application implements a comprehensive error handling strategy that ensures 
 scenarios while providing meaningful feedback to API consumers. The approach spans multiple layers of the application to
 create a robust error management system.
 
-### Exception Hierarchy
+#### Exception Hierarchy
 
 It was designed a domain-specific exception hierarchy that maps business scenarios to appropriate HTTP responses. For
 example, when dealing with product-related operations, a specialized exception is used:
@@ -273,13 +273,13 @@ public class ProductNotFoundException extends RuntimeException {
 This approach allows to maintain a clear separation between technical failures and business rule violations. Similar
 exceptions exist for orders and inventory operations, each providing specific context about the failure.
 
-### Global Error Management
+#### Global Error Management
 
 The application uses Spring's global exception handling capabilities to ensure consistent error responses across all
 endpoints. When exceptions occur, they are automatically translated into appropriate HTTP responses with meaningful
 error messages.
 
-### Transactional Boundaries
+#### Transactional Boundaries
 
 Transaction management is crucial for maintaining data consistency, especially during stock operations. The application
 carefully define transactional boundaries to ensure that related operations either complete entirely or roll back
@@ -306,7 +306,7 @@ While the current implementation provides a functioning order management system,
 robust approach to handle common challenges in distributed microservices architecture. Due to time constraints, these
 improvements weren't implemented, but let's explore what could enhance the system's reliability and scalability.
 
-### Transaction Management in Order Creation
+### 1. Transaction Management in Order Creation
 
 **Current Implementation**  
 The order creation flow currently handles two critical operations separately:
@@ -328,7 +328,7 @@ These patterns ensures atomicity between database updates and message publishing
 
 This approach guarantees that either both operations succeed or both fail, maintaining system consistency.
 
-### Message Processing Idempotency
+### 2. Message Processing Idempotency
 
 **Current Implementation**  
 The `RedisStreamStockMessageConsumer` processes stock updates without guaranteeing idempotency. If a consumer fails
@@ -343,7 +343,7 @@ Implement a message tracking system using either:
 This ensures that even if messages are redelivered, they won't be processed multiple times, maintaining stock level
 accuracy.
 
-### Message Broker System Enhancement
+### 3. Message Broker System Enhancement
 
 **Current Implementation**  
 The current use of Redis streams as a message broker requires significant manual handling of:
