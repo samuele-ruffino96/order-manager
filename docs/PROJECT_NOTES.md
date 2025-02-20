@@ -300,7 +300,7 @@ If any step fails, the entire operation is rolled back, preventing inconsistenci
 levels. This transactional approach extends across service boundaries when necessary, ensuring data integrity even
 during complex operations.
 
-## 7. Identified Issues and Proposed Solutions
+## Identified Issues and Proposed Solutions
 
 While the current implementation provides a functioning order management system, certain areas would benefit from a more
 robust approach to handle common challenges in distributed microservices architecture. Due to time constraints, these
