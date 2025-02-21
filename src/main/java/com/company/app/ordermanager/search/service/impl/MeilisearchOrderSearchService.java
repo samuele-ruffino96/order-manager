@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class MeilisearchOrderSearchService implements OrderSearchService {
+    private static final long DEFAULT_PAGE_NUMBER = 1;
     private static final String ORDER_INDEX = "orders";
 
     private final Client meilisearchClient;
@@ -58,7 +59,7 @@ public class MeilisearchOrderSearchService implements OrderSearchService {
             SearchRequest request = SearchRequest.builder()
                     .q(searchRequest.getSearchTerm())
                     .filter(filters.toArray(new String[0]))
-                    .page(pageable.getPageNumber())
+                    .page(calculatePageNumber(pageable.getPageNumber()))
                     .hitsPerPage(pageable.getPageSize())
                     .build();
 
@@ -209,4 +210,18 @@ public class MeilisearchOrderSearchService implements OrderSearchService {
                 .totalItems(document.getTotalItems())
                 .build();
     }
+
+    /**
+     * Calculates the correct page number for a query request.
+     *
+     * @param pageNumber the original requested page number
+     * @return the adjusted page number to be used in the query
+     */
+    private int calculatePageNumber(long pageNumber) {
+        // With 0 as page value, Meilisearch would process request, but wouldn't return any documents.
+        // https://www.meilisearch.com/docs/reference/api/search#page
+        long correctPage = pageNumber == 0 ? DEFAULT_PAGE_NUMBER : pageNumber;
+        return Math.toIntExact(correctPage);
+    }
+
 }
