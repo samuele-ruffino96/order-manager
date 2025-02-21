@@ -391,7 +391,7 @@ This validation ensures that:
 - Complex objects are validated recursively
 - Custom business rules are enforced before reaching the service layer
 
-### 8. Error Handling
+### 7. Error Handling
 
 The application implements a comprehensive error handling strategy that ensures predictable behavior during failure
 scenarios while providing meaningful feedback to API consumers. The approach spans multiple layers of the application to
@@ -468,17 +468,17 @@ improvements weren't implemented, but let's explore what could enhance the syste
 
 ### 1. Transaction Management in Order Creation
 
-**Current Implementation**  
+#### Current Implementation  
 The order creation flow currently handles two critical operations separately:
 
 1. Creating the order entities in the database
 2. Publishing stock update messages to the message queue
 
-**Potential Issue**  
+#### Potential Issue
 If message publishing fails after order creation succeeds, the system enters an inconsistent state - orders exist but no
 stock reservation attempts are made, leading to permanently pending orders.
 
-**Proposed Solution: Transactional Outbox and Polling publisher Patterns**  
+#### Proposed Solution: Transactional Outbox and Polling publisher Patterns
 These patterns ensures atomicity between database updates and message publishing by:
 
 1. Creating an OUTBOX table in the database
@@ -490,11 +490,11 @@ This approach guarantees that either both operations succeed or both fail, maint
 
 ### 2. Message Processing Idempotency
 
-**Current Implementation**  
+#### Current Implementation  
 The `RedisStreamStockMessageConsumer` processes stock updates without guaranteeing idempotency. If a consumer fails
 after processing but before acknowledgment, message redelivery could cause duplicate processing.
 
-**Proposed Solution: Message Deduplication Tracking**  
+#### Proposed Solution: Message Deduplication Tracking  
 Implement a message tracking system using either:
 
 1. A standalone distributed cache storing recently processed message IDs
@@ -505,7 +505,7 @@ accuracy.
 
 ### 3. Message Broker System Enhancement
 
-**Current Implementation**  
+#### Current Implementation
 The current use of Redis streams as a message broker requires significant manual handling of:
 
 - Message partitioning based on product IDs (necessary to ensure all messages for the same product go to the same
@@ -513,7 +513,7 @@ The current use of Redis streams as a message broker requires significant manual
 - Consumer group management
 - Stream cleanup and maintenance
 
-**Proposed Solution: Modern Message Broker**
+#### Proposed Solution: Modern Message Broker
 
 A system like Apache Kafka would provide several advantages:
 
