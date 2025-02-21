@@ -17,15 +17,16 @@ The core technologies used in this project include:
 The application follows a clean, domain-driven architecture organized in the following key packages:
 
 ```
-com.company.app.ordermanager/
-├── config/        # Configuration classes for Spring, Redis, etc.
-├── controller/    # REST API endpoints
-├── dto/           # Data Transfer Objects
-├── entity/        # Domain entities (Order, Product, etc.)
-├── exception/     # Custom exceptions
-├── messaging/     # Message handling for stock management
-├── repository/    # Data access layer
-└── service/       # Business logic
+com.company.app.ordermanager
+├── config        # Configuration classes for Spring, Redis, Meilisearch, etc.
+├── controller    # REST API endpoints
+├── dto           # Data Transfer Objects
+├── entity        # Domain entities (Order, Product, etc.)
+├── exception     # Custom exceptions, handlers and error DTOs
+├── messaging     # Message handling for stock management
+├── repository    # Data access layer
+├── search        # Full-text search functionalities
+└── service       # Business logic
 ```
 
 ### Architectural Patterns
@@ -109,7 +110,47 @@ Stock updates are handled asynchronously through a message queue system. When an
 
 This approach decouples order creation from stock processing, improving system responsiveness and resilience.
 
-### 3. Data Layer Design
+### 3. Caching Strategy
+
+The caching strategy focuses on optimizing access to frequently requested data while ensuring data consistency across
+the distributed system. The primary focus is on product stock levels, which require both high availability and strong
+consistency.
+
+#### Stock Level Caching
+
+Instead of querying the database for each stock check, the system implements a caching layer that stores current stock
+levels in memory. When a service needs to check product stock, it first consults the cache:
+
+```java
+public int getProductStockLevel(UUID productId) {
+   String cachedStock = cache.get(productStockKey);
+
+   if (cachedStock == null) {
+      // Cache miss - fetch from database and update cache
+      Product product = productRepository.findById(productId);
+      cache.set(productStockKey, product.getStockLevel(), CACHE_DURATION);
+      return product.getStockLevel();
+   }
+
+   return Integer.parseInt(cachedStock);
+}
+```
+
+The cache is configured with a reasonable time-to-live (TTL) of one hour, balancing data freshness with system
+performance. This approach significantly reduces database load for one of our most frequently accessed pieces of data.
+
+#### Cache Consistency
+
+To maintain cache consistency when stock levels change, it was followed a "write-through" caching pattern. When a stock
+level update occurs, the system:
+
+1. Update the database record
+2. Immediately update the cache with the new value
+3. Set an expiration time on the cached value as a safety mechanism
+
+This strategy ensures that cache inconsistencies are short-lived while maintaining high performance for read operations.
+
+### 4. Data Layer Design
 
 #### Entity Relationships
 
@@ -139,7 +180,134 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, QuerydslPre
 
 This approach provides a flexible, type-safe way to build complex queries while maintaining clean, maintainable code.
 
-### 4. API Layer
+### 5. Full-Text Search Integration
+
+The search functionality is implemented using Meilisearch, complementing our JPA-based data access with full-text search
+capabilities. The combination of these components creates a robust search system.
+
+#### Document
+
+The search implementation follows a document-based approach, where domain entities are transformed into flattened search
+documents. Consider as example the `OrderDocument` class:
+
+```java
+@Data
+@Builder
+public class OrderDocument {
+   private UUID id;
+   private String customerName;
+   private String description;
+   private Instant createdAt;
+   private int totalItems;
+}
+```
+
+This flattened document structure serves several purposes:
+
+1. Optimizes data for search performance by including only searchable fields
+2. Decouples the search index schema from our domain model
+3. Allows independent evolution of search capabilities without affecting the core domain
+
+The search integration is built around three key components that ensure clean separation of concerns:
+
+**Document Mapping Strategy**  
+The system uses a transformation layer that converts between domain entities and search documents. This mapping is
+encapsulated in the `OrderDocument` class:
+
+```java
+public static OrderDocument fromEntity(Order order) {
+   return OrderDocument.builder()
+           .id(order.getId())
+           .customerName(order.getCustomerName())
+           .description(order.getDescription())
+           .createdAt(order.getCreatedAt())
+           .totalItems(order.getOrderItems().size())
+           .build();
+}
+```
+
+This approach ensures that search documents remain a pure projection of our domain model, making it easier to modify
+either without affecting the other.
+
+**Asynchronous Index Management**  
+To prevent search operations from impacting core business transactions, index updates are performed asynchronously:
+
+```java
+@Async
+public void indexOrder(Order order) {
+   try {
+      OrderDocument document = OrderDocument.fromEntity(order);
+      String jsonDocument = objectMapper.writeValueAsString(document);
+      orderIndex.addDocuments(jsonDocument);
+      log.debug("Successfully indexed order: {}", order.getId());
+   } catch (MeilisearchException e) {
+      log.error("Failed to index order with id {} : {}",
+              order.getId(), e.getMessage());
+   }
+}
+```
+
+This approach ensures that:
+
+- Core business operations complete without waiting for search indexing
+- Search index updates don't impact database transaction performance
+- Failed index operations can be retried without affecting the main application flow
+
+**Search Configuration and Optimization**  
+The search functionality is fine-tuned through the configuration of Meilisearch attributes:
+
+```java
+private void configureIndex() {
+   orderIndex.updateSearchableAttributesSettings(Arrays.asList(
+           "customerName",
+           "description"
+   ).toArray(new String[0]));
+
+   orderIndex.updateFilterableAttributesSettings(Arrays.asList(
+           "createdAt"
+   ).toArray(new String[0]));
+
+   orderIndex.updateRankingRulesSettings(Arrays.asList(
+           "words",
+           "typo",
+           "proximity",
+           "attribute",
+           "sort",
+           "exactness"
+   ).toArray(new String[0]));
+}
+```
+
+This configuration specifies which fields support full-text search versus filtering and defines ranking rules to improve
+result relevance
+
+#### Request/Response Model
+
+The search integration also supports date range filtering and pagination, implemented through a dedicated
+request/response model:
+
+```java
+@Data
+public class OrderSearchRequest {
+   private String searchTerm;
+   private Instant dateFrom;
+   private Instant dateTo;
+}
+
+@Data
+@Builder
+public class OrderSearchResult {
+   private UUID id;
+   private String customerName;
+   private String description;
+   private Instant createdAt;
+   private int totalItems;
+}
+```
+
+The implementation handles conversion between search parameters and Meilisearch's native query format.
+
+### 6. API Layer
 
 The API layer serves as the interface between clients and our business logic, providing a RESTful service that follows
 HTTP standards and best practices.
@@ -150,11 +318,11 @@ The REST API follows a resource-oriented architecture with clear naming conventi
 Let's take as example the `OrderController` to illustrates this approach:
 
 ```java
-
 @RestController
 @RequestMapping("/api/v1/orders")
 public class OrderControllerImpl {
     @GetMapping              // List orders with filtering
+    @GetMapping("/search")   // Fulltext orders search 
     @GetMapping("/{id}")     // Get single order
     @PostMapping             // Create new order
     @DeleteMapping("/{id}")  // Cancel order
@@ -184,8 +352,23 @@ public interface JsonViews {
 ```
 
 For example, when listing orders, the REST API return basic information, but when retrieving a specific order, the
-response includes additional details like order items and their statuses. This approach reduces unnecessary data
-transfer and improves API performance.
+response includes additional details like order items and their statuses:
+
+```java
+@RestController
+@RequestMapping("/api/v1/orders")
+public class OrderControllerImpl implements OrderController {
+   @GetMapping
+   @JsonView(JsonViews.ListView.class)
+   public Page<Order> getOrdersList(Predicate predicate, Pageable pageable) {...}
+
+   @GetMapping("/{id}")
+   @JsonView(JsonViews.DetailView.class)
+   public Order getOrderById(UUID id) {...}
+}
+```
+
+This approach reduces unnecessary data transfer and improves API performance.
 
 #### Input Validation Strategy
 
@@ -208,47 +391,7 @@ This validation ensures that:
 - Complex objects are validated recursively
 - Custom business rules are enforced before reaching the service layer
 
-### 5. Caching Strategy
-
-The caching strategy focuses on optimizing access to frequently requested data while ensuring data consistency across
-the distributed system. The primary focus is on product stock levels, which require both high availability and strong
-consistency.
-
-#### Stock Level Caching
-
-Instead of querying the database for each stock check, the system implements a caching layer that stores current stock
-levels in memory. When a service needs to check product stock, it first consults the cache:
-
-```java
-public int getProductStockLevel(UUID productId) {
-    String cachedStock = cache.get(productStockKey);
-
-    if (cachedStock == null) {
-        // Cache miss - fetch from database and update cache
-        Product product = productRepository.findById(productId);
-        cache.set(productStockKey, product.getStockLevel(), CACHE_DURATION);
-        return product.getStockLevel();
-    }
-
-    return Integer.parseInt(cachedStock);
-}
-```
-
-The cache is configured with a reasonable time-to-live (TTL) of one hour, balancing data freshness with system
-performance. This approach significantly reduces database load for one of our most frequently accessed pieces of data.
-
-#### Cache Consistency
-
-To maintain cache consistency when stock levels change, it was followed a "write-through" caching pattern. When a stock
-level update occurs, the system:
-
-1. Update the database record
-2. Immediately update the cache with the new value
-3. Set an expiration time on the cached value as a safety mechanism
-
-This strategy ensures that cache inconsistencies are short-lived while maintaining high performance for read operations.
-
-### 6. Error Handling
+### 8. Error Handling
 
 The application implements a comprehensive error handling strategy that ensures predictable behavior during failure
 scenarios while providing meaningful feedback to API consumers. The approach spans multiple layers of the application to
@@ -260,7 +403,6 @@ It was designed a domain-specific exception hierarchy that maps business scenari
 example, when dealing with product-related operations, a specialized exception is used:
 
 ```java
-
 @ResponseStatus(HttpStatus.NOT_FOUND)
 public class ProductNotFoundException extends RuntimeException {
     public ProductNotFoundException(UUID productId) {
@@ -274,9 +416,29 @@ exceptions exist for orders and inventory operations, each providing specific co
 
 #### Global Error Management
 
-The application uses Spring's global exception handling capabilities to ensure consistent error responses across all
-endpoints. When exceptions occur, they are automatically translated into appropriate HTTP responses with meaningful
-error messages.
+The application implements a comprehensive global exception handling strategy through a dedicated
+`GlobalExceptionHandler` class annotated with `@RestControllerAdvice`. This centralized approach ensures consistent
+error responses across all endpoints while providing appropriate levels of detail based on the error type.
+
+The exception handler manages several categories of exceptions:
+
+- Validation Errors: When request payloads fail Jakarta Validation constraints, the handler captures
+  `MethodArgumentNotValidException` and transforms it into a structured response containing specific field-level
+  validation errors. This helps clients quickly identify and correct invalid input data.
+
+- Domain-Specific Exceptions: Custom exceptions like `ProductNotFoundException` and `OrderNotFoundException` are mapped
+  to HTTP 404 responses with clear, business-focused error messages that help API consumers understand what resource was
+  not found.
+
+- Unexpected Errors: A catch-all handler for unhandled exceptions provides a sanitized error response, preventing
+  sensitive implementation details from leaking to clients while maintaining a consistent error format.
+
+This consistent error handling approach provides several benefits:
+
+- Unified error response format across all endpoints
+- Clear separation between validation errors and business logic exceptions
+- Appropriate error details for debugging while maintaining security
+- Improved API usability through descriptive error messages
 
 #### Transactional Boundaries
 
@@ -285,7 +447,6 @@ carefully define transactional boundaries to ensure that related operations eith
 completely. Consider stock reservation:
 
 ```java
-
 @Transactional
 public void processStockUpdateMessage(StockUpdateMessage message) {
     // If any part of this process fails, all changes are rolled back
@@ -362,7 +523,7 @@ A system like Apache Kafka would provide several advantages:
 4. Better scalability for high-volume message processing
 5. Native support for message replay and fault tolerance
 
-The current architecture's interface-based design makes this transition particularly straightforward through our clear
+The current architecture's interface-based design makes this transition particularly straightforward through a clear
 message handling interface contracts:
 
 ```java
@@ -377,10 +538,9 @@ public interface StockMessageConsumerService {
 }
 ```
 
-Potential Kafka implementation:
+A potential Kafka implementation:
 
 ```java
-
 @Service
 public class KafkaStockMessageProducer implements StockMessageProducerService {
     private final KafkaTemplate<String, StockUpdateMessage> kafkaTemplate;
@@ -417,5 +577,5 @@ evolution much simpler and safer.
 
 ## Testing
 
-TODO: Describe testing classes subdivision (unit, integration test), the When-Given-Then pattern approach and the test
-methods name's convention [operation]_when[condition]_should[expectedBehavior].
+**TODO**: Describe testing classes subdivision (unit, integration test), the When-Given-Then pattern approach and the
+test methods name's convention [operation]_when[condition]_should[expectedBehavior].
