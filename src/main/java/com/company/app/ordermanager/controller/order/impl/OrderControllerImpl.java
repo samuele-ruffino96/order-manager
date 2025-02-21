@@ -1,5 +1,6 @@
 package com.company.app.ordermanager.controller.order.impl;
 
+import com.company.app.ordermanager.controller.order.api.OrderController;
 import com.company.app.ordermanager.dto.order.CreateOrderDto;
 import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.view.JsonViews;
@@ -29,7 +30,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/orders")
 @Tag(name = "Orders", description = "Order management endpoints")
-public class OrderControllerImpl {
+public class OrderControllerImpl implements OrderController {
     private final OrderService orderService;
     private final OrderSearchService orderSearchService;
 
@@ -63,8 +64,8 @@ public class OrderControllerImpl {
     )
     @ApiResponse(responseCode = "500", description = "Unexpected error during full-text search")
     public Page<OrderSearchResult> searchOrders(
-            OrderSearchRequest searchRequest,
-            Pageable pageable) {
+            @Parameter(description = "Search criteria") OrderSearchRequest searchRequest,
+            @Parameter(description = "Pagination parameters") Pageable pageable) {
         return orderSearchService.searchOrders(searchRequest, pageable);
     }
 

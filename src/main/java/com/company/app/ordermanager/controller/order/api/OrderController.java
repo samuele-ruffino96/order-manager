@@ -2,6 +2,8 @@ package com.company.app.ordermanager.controller.order.api;
 
 import com.company.app.ordermanager.dto.order.CreateOrderDto;
 import com.company.app.ordermanager.entity.order.Order;
+import com.company.app.ordermanager.search.dto.OrderSearchRequest;
+import com.company.app.ordermanager.search.dto.OrderSearchResult;
 import com.querydsl.core.types.Predicate;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -14,6 +16,8 @@ import java.util.UUID;
 
 public interface OrderController {
     Page<Order> getOrdersList(@QuerydslPredicate(root = Order.class) Predicate predicate, Pageable pageable);
+
+    Page<OrderSearchResult> searchOrders(OrderSearchRequest searchRequest, Pageable pageable);
 
     Order getOrderById(@PathVariable("id") UUID id);
 
