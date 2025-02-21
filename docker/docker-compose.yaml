@@ -7,6 +7,9 @@ services:
       DB_PASSWORD: password
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      MEILISEARCH_HOST: meilisearch
+      MEILISEARCH_PORT: 7700
+      MEILISEARCH_API_KEY: "masterKey123"
     ports:
       - "8080:8080"
     depends_on:
@@ -56,5 +59,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    environment:
+      MEILI_MASTER_KEY: "masterKey123"
 
 

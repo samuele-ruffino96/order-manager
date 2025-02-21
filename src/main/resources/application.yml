@@ -14,3 +14,8 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+
+meilisearch:
+  host: ${MEILISEARCH_HOST}
+  port: ${MEILISEARCH_PORT}
+  api-key: ${MEILISEARCH_API_KEY}
