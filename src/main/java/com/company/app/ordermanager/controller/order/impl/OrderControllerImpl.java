@@ -2,8 +2,8 @@ package com.company.app.ordermanager.controller.order.impl;
 
 import com.company.app.ordermanager.dto.order.CreateOrderDto;
 import com.company.app.ordermanager.entity.order.Order;
+import com.company.app.ordermanager.entity.view.JsonViews;
 import com.company.app.ordermanager.service.api.order.OrderService;
-import com.company.app.ordermanager.view.JsonViews;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.querydsl.core.types.Predicate;
 import io.swagger.v3.oas.annotations.Operation;

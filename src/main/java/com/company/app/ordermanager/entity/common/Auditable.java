@@ -1,6 +1,6 @@
 package com.company.app.ordermanager.entity.common;
 
-import com.company.app.ordermanager.view.JsonViews;
+import com.company.app.ordermanager.entity.view.JsonViews;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.Column;

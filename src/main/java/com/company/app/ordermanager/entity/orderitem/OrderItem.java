@@ -2,7 +2,7 @@ package com.company.app.ordermanager.entity.orderitem;
 
 import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.product.Product;
-import com.company.app.ordermanager.view.JsonViews;
+import com.company.app.ordermanager.entity.view.JsonViews;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.*;
 import lombok.*;

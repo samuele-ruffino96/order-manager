@@ -1,4 +1,4 @@
-package com.company.app.ordermanager.view;
+package com.company.app.ordermanager.entity.view;
 
 public interface JsonViews {
     public static class ListView {

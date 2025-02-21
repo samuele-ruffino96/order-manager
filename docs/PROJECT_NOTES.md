@@ -26,7 +26,6 @@ com.company.app.ordermanager/
 ├── messaging/     # Message handling for stock management
 ├── repository/    # Data access layer
 └── service/       # Business logic
-└── view/          # View-related components
 ```
 
 ### Architectural Patterns

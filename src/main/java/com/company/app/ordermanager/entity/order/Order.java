@@ -3,7 +3,7 @@ package com.company.app.ordermanager.entity.order;
 import com.company.app.ordermanager.entity.common.Auditable;
 import com.company.app.ordermanager.entity.orderitem.OrderItem;
 import com.company.app.ordermanager.entity.orderitem.OrderItemStatus;
-import com.company.app.ordermanager.view.JsonViews;
+import com.company.app.ordermanager.entity.view.JsonViews;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.querydsl.core.annotations.QueryEntity;
 import jakarta.persistence.*;
