@@ -11,6 +11,7 @@ import com.company.app.ordermanager.exception.order.OrderNotFoundException;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.messaging.service.api.stock.StockMessageProducerService;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
+import com.company.app.ordermanager.search.service.api.OrderSearchService;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
 import com.company.app.ordermanager.service.impl.order.OrderServiceImpl;
 import com.querydsl.core.types.Predicate;
@@ -47,6 +48,9 @@ class OrderServiceImplTest {
 
     @Mock
     private StockMessageProducerService stockMessageProducerService;
+
+    @Mock
+    private OrderSearchService orderSearchService;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -132,7 +136,10 @@ class OrderServiceImplTest {
                 .status(OrderItemStatus.PROCESSING)
                 .build();
         testOrder.setOrderItems(Set.of(item));
+
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(testOrder));
+        when(orderItemService.cancelOrderItems(Set.of(item.getId()))).thenReturn(Set.of(item));
+        doNothing().when(orderSearchService).deleteOrder(any(UUID.class));
 
         // When
         orderService.deleteById(ORDER_ID);
@@ -158,6 +165,7 @@ class OrderServiceImplTest {
         // Given
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
         when(orderItemService.createOrderItems(any(), any())).thenReturn(Set.of(testOrderItem));
+        doNothing().when(orderSearchService).indexOrder(any(Order.class));
 
         // When
         Order result = orderService.createOrder(createOrderDto);
