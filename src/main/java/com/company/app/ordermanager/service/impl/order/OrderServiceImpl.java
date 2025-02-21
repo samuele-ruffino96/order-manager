@@ -7,6 +7,7 @@ import com.company.app.ordermanager.exception.order.OrderNotFoundException;
 import com.company.app.ordermanager.exception.product.ProductNotFoundException;
 import com.company.app.ordermanager.messaging.service.api.stock.StockMessageProducerService;
 import com.company.app.ordermanager.repository.api.order.OrderRepository;
+import com.company.app.ordermanager.search.service.api.OrderSearchService;
 import com.company.app.ordermanager.service.api.order.OrderService;
 import com.company.app.ordermanager.service.api.orderitem.OrderItemService;
 import com.querydsl.core.types.Predicate;
@@ -29,6 +30,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemService orderItemService;
     private final StockMessageProducerService stockMessageProducerService;
+    private final OrderSearchService orderSearchService;
 
     /**
      * Retrieves a pageable list of {@link Order} entities that match the given {@link Predicate}.
@@ -77,6 +79,9 @@ public class OrderServiceImpl implements OrderService {
         Set<UUID> orderItemIds = order.getOrderItems().stream().map(OrderItem::getId).collect(Collectors.toSet());
 
         orderItemService.cancelOrderItems(orderItemIds);
+
+        // Remove from search index
+        orderSearchService.deleteOrder(id);
     }
 
     /**
@@ -110,6 +115,9 @@ public class OrderServiceImpl implements OrderService {
 
         // Send stock reservation request to queue
         stockMessageProducerService.sendStockReservationMessage(savedOrder.getOrderItems());
+
+        // Index the new order
+        orderSearchService.indexOrder(savedOrder);
 
         return savedOrder;
     }

@@ -3,6 +3,9 @@ package com.company.app.ordermanager.controller.order.impl;
 import com.company.app.ordermanager.dto.order.CreateOrderDto;
 import com.company.app.ordermanager.entity.order.Order;
 import com.company.app.ordermanager.entity.view.JsonViews;
+import com.company.app.ordermanager.search.dto.OrderSearchRequest;
+import com.company.app.ordermanager.search.dto.OrderSearchResult;
+import com.company.app.ordermanager.search.service.api.OrderSearchService;
 import com.company.app.ordermanager.service.api.order.OrderService;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.querydsl.core.types.Predicate;
@@ -28,11 +31,12 @@ import java.util.UUID;
 @Tag(name = "Orders", description = "Order management endpoints")
 public class OrderControllerImpl {
     private final OrderService orderService;
+    private final OrderSearchService orderSearchService;
 
     @GetMapping
     @JsonView(JsonViews.ListView.class)
     @Operation(
-            summary = "Get a list of orders",
+            summary = "Get orders list",
             description = "Retrieves a paginated list of orders with optional filtering using QueryDSL predicates"
     )
     @ApiResponse(
@@ -44,6 +48,24 @@ public class OrderControllerImpl {
             @Parameter(description = "Filter criteria using QueryDSL") @QuerydslPredicate(root = Order.class) Predicate predicate,
             @Parameter(description = "Pagination parameters") Pageable pageable) {
         return orderService.findAll(predicate, pageable);
+    }
+
+    @GetMapping("/search")
+    @JsonView(JsonViews.ListView.class)
+    @Operation(
+            summary = "Search orders",
+            description = "Search orders using full-text search and filters"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Successfully retrieved orders",
+            useReturnTypeSchema = true
+    )
+    @ApiResponse(responseCode = "500", description = "Unexpected error during full-text search")
+    public Page<OrderSearchResult> searchOrders(
+            OrderSearchRequest searchRequest,
+            Pageable pageable) {
+        return orderSearchService.searchOrders(searchRequest, pageable);
     }
 
     @GetMapping("/{id}")
