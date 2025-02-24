@@ -1,0 +1,26 @@
+# https://taskfile.dev
+version: '3'
+
+env:
+  BORDER: double
+  BORDER_FOREGROUND: "212"
+
+tasks:
+  01-compile-app:
+    desc: "Generate .jar file using Maven"
+    cmds:
+      - mvn clean install
+  02-build-app-image:
+    desc: "Build order-manager docker image"
+    cmds:
+      - docker build -t order-manager:0.1 -f docker/order-manager/Dockerfile .
+      - echo 'Build completed for order-manager:0.1'
+  03-build-custom-redis-image:
+    desc: "Build redis-custom docker image"
+    cmds:
+      - docker build -t redis-custom:7.2.4 -f docker/redis/Dockerfile docker/redis
+      - echo 'Build completed for redis-custom:7.2.4'
+  04-deploy-stack:
+    desc: "Running stack services"
+    cmds:
+      - docker compose up -d
